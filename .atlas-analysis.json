@@ -1,0 +1,142 @@
+{
+  "projectType": "saas",
+  "projectName": "Sistema Venta",
+  "projectDescription": "Full-stack point of sale and inventory management system with role-based access control",
+  "theme": "linden",
+  "primaryColor": "#2563eb",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Backend Setup",
+            "pages": [
+              "backend/configuration",
+              "backend/database",
+              "backend/deployment"
+            ]
+          },
+          {
+            "group": "Frontend Setup",
+            "pages": [
+              "frontend/configuration",
+              "frontend/development",
+              "frontend/deployment"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/authentication",
+              "features/user-management",
+              "features/product-management",
+              "features/sales",
+              "features/reports"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/auth/login",
+              "api/auth/session"
+            ]
+          },
+          {
+            "group": "Users",
+            "pages": [
+              "api/users/list",
+              "api/users/create",
+              "api/users/update",
+              "api/users/delete"
+            ]
+          },
+          {
+            "group": "Products",
+            "pages": [
+              "api/products/list",
+              "api/products/create",
+              "api/products/update",
+              "api/products/delete"
+            ]
+          },
+          {
+            "group": "Categories",
+            "pages": [
+              "api/categories/list",
+              "api/categories/create",
+              "api/categories/update",
+              "api/categories/delete"
+            ]
+          },
+          {
+            "group": "Sales",
+            "pages": [
+              "api/sales/register",
+              "api/sales/history",
+              "api/sales/report"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "api/dashboard/summary"
+            ]
+          },
+          {
+            "group": "Roles & Menus",
+            "pages": [
+              "api/roles/list",
+              "api/menus/list"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "User authentication and session management",
+    "Role-based access control (RBAC)",
+    "Product inventory management with categories",
+    "Sales transaction processing",
+    "Sales history and reporting",
+    "Business analytics dashboard",
+    "Excel report export"
+  ],
+  "publicApiSurface": [
+    "POST /api/Usuario/IniciarSesion",
+    "GET /api/Usuario/Lista",
+    "POST /api/Usuario/Guardar",
+    "PUT /api/Usuario/Editar",
+    "DELETE /api/Usuario/Eliminar/{id}",
+    "GET /api/Producto/Lista",
+    "POST /api/Producto/Guardar",
+    "PUT /api/Producto/Editar",
+    "DELETE /api/Producto/Eliminar/{id}",
+    "GET /api/Categoria/Lista",
+    "POST /api/Categoria/Guardar",
+    "PUT /api/Categoria/Editar",
+    "DELETE /api/Categoria/Eliminar/{id}",
+    "POST /api/Venta/Registrar",
+    "GET /api/Venta/Historial",
+    "GET /api/Venta/Reporte",
+    "GET /api/DashBoard/Resumen",
+    "GET /api/Rol/Lista",
+    "GET /api/Menu/Lista"
+  ]
+}
