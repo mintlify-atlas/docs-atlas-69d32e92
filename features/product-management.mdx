@@ -1,0 +1,311 @@
+---
+title: 'Product Management'
+description: 'Manage your inventory with product creation, editing, and stock tracking'
+icon: 'box'
+---
+
+## Overview
+
+The Product Management module is the heart of your inventory control in Sistema Venta. Here you can add products, organize them by category, track stock levels, set pricing, and manage product availability.
+
+## Accessing Product Management
+
+Navigate to the **Productos** (Products) section from the main menu to view your complete product catalog.
+
+## Product List View
+
+The product table displays comprehensive information about each item:
+
+| Column | Description |
+|--------|-------------|
+| **Nombre** | Product name |
+| **Categoria** | Product category (e.g., Electronics, Clothing) |
+| **Stock** | Current inventory quantity |
+| **Precio** | Unit price |
+| **Estado** | Active or Inactive status |
+| **Acciones** | Edit and delete actions |
+
+### Search Functionality
+
+The search bar filters products in real-time as you type. Search across:
+- Product names
+- Categories
+- Stock levels
+- Prices
+
+The filter is case-insensitive and searches all visible columns (`producto.component.ts:56-59`).
+
+### Pagination Controls
+
+Navigate large product catalogs with ease:
+- **Page Size Options**: 5, 10, or 20 products per page
+- **Navigation**: First, Previous, Next, Last buttons
+- **Current Page Indicator**: Shows which page you're viewing
+
+## Creating a New Product
+
+<Steps>
+  <Step title="Open Product Form">
+    Click the **Nuevo Producto** (New Product) button at the top of the page. A modal dialog opens with the product creation form.
+  </Step>
+  
+  <Step title="Enter Product Details">
+    Fill in all required fields:
+    
+    - **Nombre**: Product name (e.g., "Laptop Dell Inspiron 15")
+    - **Categoria**: Select from dropdown (categories loaded from database)
+    - **Stock**: Initial inventory quantity (numeric)
+    - **Precio**: Unit price (numeric, can include decimals)
+    - **Estado**: Active (1) or Inactive (0)
+  </Step>
+  
+  <Step title="Save Product">
+    Click **Guardar** (Save). The system will:
+    - Validate all fields are complete
+    - Send POST request to `/Producto/Guardar`
+    - Display success confirmation
+    - Refresh product list to show new item
+  </Step>
+</Steps>
+
+<Note>
+Products must be assigned to a category. Ensure your categories are set up before adding products. The category dropdown is populated from the `Categoria` service.
+</Note>
+
+## Editing a Product
+
+Update product information as prices change, stock is restocked, or details need correction.
+
+<Steps>
+  <Step title="Select Product">
+    Click the blue **edit** icon (pencil) next to the product you want to modify.
+  </Step>
+  
+  <Step title="Update Information">
+    The product form opens with existing data pre-filled. You can modify:
+    - Product name
+    - Category assignment
+    - Stock quantity (increase/decrease)
+    - Unit price
+    - Active status
+  </Step>
+  
+  <Step title="Save Changes">
+    Click **Actualizar** (Update) to save. The system:
+    - Validates updated data
+    - Sends PUT request to `/Producto/Editar`
+    - Updates the product list
+    - Shows success or error message
+  </Step>
+</Steps>
+
+<Tip>
+When restocking inventory, edit the product and update the **Stock** field with the new total quantity (not the quantity added).
+</Tip>
+
+## Deleting a Product
+
+<Warning>
+Deleting a product removes it permanently from your catalog. Consider setting it to "Inactive" instead if you want to preserve historical sales data.
+</Warning>
+
+<Steps>
+  <Step title="Initiate Delete">
+    Click the red **delete** icon (trash can) next to the product.
+  </Step>
+  
+  <Step title="Confirm Deletion">
+    A SweetAlert confirmation dialog appears:
+    - **Title**: "¿Desea eliminar el producto?" (Do you want to delete the product?)
+    - **Text**: Shows the product name
+    - **Icon**: Warning icon
+    - **Buttons**: "Si, eliminar" (Yes, delete) and "No, volver" (No, go back)
+  </Step>
+  
+  <Step title="Complete Deletion">
+    Click **Si, eliminar** to permanently remove the product. The system:
+    - Sends DELETE request to `/Producto/Eliminar/{id}`
+    - Removes product from database
+    - Refreshes the product list
+    - Shows success message
+  </Step>
+</Steps>
+
+## Product Categories
+
+Products are organized by categories for better organization and reporting. Categories must be created before assigning them to products.
+
+The category dropdown (`modal-producto.component.ts:48-53`) shows:
+- All available categories from your system
+- Category ID and description
+- Active categories only
+
+<Accordion title="How to manage categories">
+Categories are managed through the `CategoriaService`. While this documentation focuses on products, categories can be managed through:
+- Direct database management
+- Category management API endpoints (`/Categoria/Lista`, `/Categoria/Guardar`, etc.)
+- Administrative interface (if available in your deployment)
+</Accordion>
+
+## Product Status
+
+Each product has an active status that controls its visibility and availability:
+
+<CardGroup cols={2}>
+  <Card title="Active Products" icon="circle-check">
+    **Status = 1** (Activo)
+    
+    - Visible in product list
+    - Available for sale transactions
+    - Appears in sales autocomplete
+    - Included in reports
+  </Card>
+  
+  <Card title="Inactive Products" icon="circle-xmark">
+    **Status = 0** (No activo)
+    
+    - Visible in product management
+    - NOT available for new sales
+    - Filtered out from POS interface
+    - Preserved for historical records
+  </Card>
+</CardGroup>
+
+<Note>
+When a product is set to inactive, it won't appear in the sales interface but remains in your product catalog for reporting and historical purposes.
+</Note>
+
+## Stock Management
+
+Sistema Venta tracks inventory quantities for each product:
+
+### Stock Display
+- Current stock shows in the **Stock** column of the product table
+- Stock levels can be any non-negative number
+- No automatic stock alerts (implement external monitoring if needed)
+
+### Stock Updates
+- **Manual Update**: Edit the product and change the stock value
+- **Automatic Reduction**: Stock decreases automatically when sales are completed
+- **Restock Process**: Edit product and set new total stock quantity
+
+<Warning>
+The sales module (`venta.component.ts:61`) filters products to only show items with `stock > 0` and `esActivo == 1`. Products with zero stock won't appear in the sales interface.
+</Warning>
+
+## Pricing
+
+Product prices are stored as strings but displayed and used as decimal numbers:
+
+- **Price Format**: Stored as string, e.g., "299.99"
+- **Decimal Support**: Yes, use periods for decimals
+- **Currency**: Displayed as "S/." (Peruvian Sol) in sales interface
+- **Price Changes**: Update anytime via product edit form
+
+The price is used to calculate:
+- Line item totals (quantity × price)
+- Sales totals
+- Reports and analytics
+
+## API Endpoints
+
+Product Management uses these API endpoints:
+
+```typescript
+// Get all products
+GET /Producto/Lista
+
+// Create new product
+POST /Producto/Guardar
+{
+  "nombre": "Laptop Dell Inspiron 15",
+  "idCategoria": 1,
+  "stock": 10,
+  "precio": "1299.99",
+  "esActivo": 1
+}
+
+// Update product
+PUT /Producto/Editar
+{
+  "idProducto": 5,
+  "nombre": "Laptop Dell Inspiron 15 (Updated)",
+  "idCategoria": 1,
+  "stock": 15,
+  "precio": "1199.99",
+  "esActivo": 1
+}
+
+// Delete product
+DELETE /Producto/Eliminar/{id}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Descriptive Names" icon="tag">
+    Use clear, searchable product names that include brand, model, and key features.
+  </Card>
+  
+  <Card title="Accurate Stock" icon="boxes-stacked">
+    Keep stock levels updated. Regular audits prevent overselling and stock discrepancies.
+  </Card>
+  
+  <Card title="Competitive Pricing" icon="dollar-sign">
+    Review and update prices regularly to remain competitive and maintain margins.
+  </Card>
+  
+  <Card title="Category Organization" icon="folder-tree">
+    Use meaningful categories that align with your business and make products easy to find.
+  </Card>
+</CardGroup>
+
+## Integration with Sales
+
+Products in the Product Management module directly integrate with the sales system:
+
+- **Sales Autocomplete**: Active products with stock > 0 appear in sales product search
+- **Stock Reduction**: Completed sales automatically reduce product stock
+- **Price Retrieval**: Current product price is used in sale calculations
+- **Product Details**: Product name and category appear in sales history and reports
+
+## Related Components
+
+- **Component**: `producto.component.ts` - Product list and management logic
+- **Modal**: `modal-producto.component.ts` - Product creation/editing form  
+- **Service**: `producto.service.ts` - API integration for product operations
+- **Interface**: `producto.ts` - Product data structure
+- **Related**: `categoria.service.ts` - Category data for product organization
+
+## Troubleshooting
+
+<Accordion title="Can't save product - button disabled">
+  Verify all required fields are filled:
+  - Product name (not empty)
+  - Category selected from dropdown
+  - Stock is a valid number (can be 0)
+  - Price is a valid number (use decimal point, not comma)
+  - Status is selected
+</Accordion>
+
+<Accordion title="Product doesn't appear in sales">
+  Check these conditions:
+  - Product status is Active (esActivo = 1)
+  - Stock level is greater than 0
+  - Product was saved successfully
+  - Sales page has been refreshed
+</Accordion>
+
+<Accordion title="Category dropdown is empty">
+  This means no categories exist in your system. Categories must be created before adding products. Check:
+  - `/Categoria/Lista` API endpoint
+  - Database has category records
+  - Category service is working properly
+</Accordion>
+
+<Accordion title="Stock doesn't decrease after sale">
+  Stock reduction happens automatically when a sale is registered (`venta.component.ts:119-153`). If stock isn't decreasing:
+  - Check that sales are completing successfully
+  - Verify the sale registration endpoint is updating stock
+  - Review server logs for errors
+</Accordion>

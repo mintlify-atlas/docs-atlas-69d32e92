@@ -1,0 +1,180 @@
+---
+title: 'Create Product'
+api: 'POST /api/Producto/Guardar'
+description: 'Create a new product in the system'
+---
+
+## Endpoint
+
+```
+POST /api/Producto/Guardar
+```
+
+Creates a new product with the provided information. The product will be assigned a unique ID upon creation.
+
+## Request Body
+
+<ParamField body="nombre" type="string" required>
+  Product name
+</ParamField>
+
+<ParamField body="idCategoria" type="integer" required>
+  ID of the category this product belongs to
+</ParamField>
+
+<ParamField body="stock" type="integer" required>
+  Initial stock quantity
+</ParamField>
+
+<ParamField body="precio" type="string" required>
+  Product price (formatted as string, e.g., "99.99")
+</ParamField>
+
+<ParamField body="esActivo" type="integer" default="1">
+  Active status (1 = active, 0 = inactive)
+</ParamField>
+
+<ParamField body="idProducto" type="integer">
+  Leave empty or 0 for new products (auto-generated)
+</ParamField>
+
+<ParamField body="descripcionCategoria" type="string">
+  Read-only field, automatically populated from category
+</ParamField>
+
+## Response
+
+The response is wrapped in a `Response<T>` object containing the created product.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates whether the product was created successfully
+</ResponseField>
+
+<ResponseField name="value" type="object" required>
+  The created product object with all fields populated
+  
+  <Expandable title="ProductoDTO properties">
+    <ResponseField name="idProducto" type="integer">
+      Unique identifier assigned to the new product
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Product name
+    </ResponseField>
+    
+    <ResponseField name="idCategoria" type="integer">
+      Category ID
+    </ResponseField>
+    
+    <ResponseField name="descripcionCategoria" type="string">
+      Category name/description
+    </ResponseField>
+    
+    <ResponseField name="stock" type="integer">
+      Current stock quantity
+    </ResponseField>
+    
+    <ResponseField name="precio" type="string">
+      Product price
+    </ResponseField>
+    
+    <ResponseField name="esActivo" type="integer">
+      Active status
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message (only populated when status is false)
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "http://localhost:5000/api/Producto/Guardar" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Monitor Samsung 27",
+    "idCategoria": 1,
+    "stock": 25,
+    "precio": "349.99",
+    "esActivo": 1
+  }'
+```
+
+```javascript JavaScript
+fetch('http://localhost:5000/api/Producto/Guardar', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    nombre: 'Monitor Samsung 27',
+    idCategoria: 1,
+    stock: 25,
+    precio: '349.99',
+    esActivo: 1
+  })
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+```csharp C#
+using var client = new HttpClient();
+var producto = new ProductoDTO
+{
+    Nombre = "Monitor Samsung 27",
+    IdCategoria = 1,
+    Stock = 25,
+    Precio = "349.99",
+    EsActivo = 1
+};
+var json = JsonSerializer.Serialize(producto);
+var content = new StringContent(json, Encoding.UTF8, "application/json");
+var response = await client.PostAsync("http://localhost:5000/api/Producto/Guardar", content);
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "status": true,
+  "value": {
+    "idProducto": 15,
+    "nombre": "Monitor Samsung 27",
+    "idCategoria": 1,
+    "descripcionCategoria": "Electrónica",
+    "stock": 25,
+    "precio": "349.99",
+    "esActivo": 1
+  },
+  "msg": null
+}
+```
+
+```json 200 - Error
+{
+  "status": false,
+  "value": null,
+  "msg": "Invalid category ID"
+}
+```
+</CodeGroup>
+
+## Response Status
+
+This endpoint always returns HTTP 200. Check the `status` field in the response body to determine success or failure.
+
+- `status: true` - Product created successfully
+- `status: false` - An error occurred (check `msg` field for details)
+
+## Validation
+
+- Product name must not be empty
+- Category ID must reference an existing category
+- Stock must be a non-negative integer
+- Price must be a valid decimal number formatted as a string

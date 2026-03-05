@@ -1,0 +1,149 @@
+---
+title: 'Update User'
+api: 'PUT /api/Usuario/Editar'
+description: 'Update an existing user in the system'
+---
+
+## Endpoint
+
+```
+PUT /api/Usuario/Editar
+```
+
+Updates an existing user's information in the Sistema Venta application. All user fields can be modified including name, email, role, and active status.
+
+## Request Body
+
+<ParamField body="idUsuario" type="integer" required>
+  Unique identifier of the user to update
+</ParamField>
+
+<ParamField body="nombreCompleto" type="string">
+  Full name of the user
+</ParamField>
+
+<ParamField body="correo" type="string">
+  Email address for the user
+</ParamField>
+
+<ParamField body="idRol" type="integer">
+  Role identifier to assign to the user
+</ParamField>
+
+<ParamField body="clave" type="string">
+  New password for the user account (only include if changing password)
+</ParamField>
+
+<ParamField body="esActivo" type="integer">
+  Active status (1 = active, 0 = inactive)
+</ParamField>
+
+## Response
+
+The endpoint returns a `Response<bool>` wrapper indicating whether the update was successful.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates if the user was successfully updated
+</ResponseField>
+
+<ResponseField name="value" type="boolean">
+  True if the user was updated, false otherwise
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X PUT "https://api.example.com/api/Usuario/Editar" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "idUsuario": 3,
+    "nombreCompleto": "Carlos Alberto Martínez",
+    "correo": "carlos.martinez@example.com",
+    "idRol": 1,
+    "esActivo": 1
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Usuario/Editar', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    idUsuario: 3,
+    nombreCompleto: 'Carlos Alberto Martínez',
+    correo: 'carlos.martinez@example.com',
+    idRol: 1,
+    esActivo: 1
+  })
+});
+
+const data = await response.json();
+```
+
+```csharp C#
+var client = new HttpClient();
+var usuario = new UsuarioDTO
+{
+    IdUsuario = 3,
+    NombreCompleto = "Carlos Alberto Martínez",
+    Correo = "carlos.martinez@example.com",
+    IdRol = 1,
+    EsActivo = 1
+};
+
+var json = JsonSerializer.Serialize(usuario);
+var content = new StringContent(json, Encoding.UTF8, "application/json");
+var response = await client.PutAsync("https://api.example.com/api/Usuario/Editar", content);
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json Success
+{
+  "status": true,
+  "value": true,
+  "msg": null
+}
+```
+
+```json Error - User Not Found
+{
+  "status": false,
+  "value": false,
+  "msg": "User with ID 3 not found"
+}
+```
+
+```json Error - Invalid Email
+{
+  "status": false,
+  "value": false,
+  "msg": "Email already exists for another user"
+}
+```
+</CodeGroup>
+
+## Implementation Details
+
+- **Controller**: `UsuarioController.cs:89`
+- **Service Method**: `IUsuarioService.Editar(UsuarioDTO)`
+- **Request Source**: `[FromBody]`
+- **Response Type**: `Response<bool>`
+- **HTTP Status**: Always returns 200 OK (check `status` field for actual result)
+
+## Notes
+
+- The `idUsuario` field is required to identify which user to update
+- Only include the `clave` field if you want to change the user's password
+- Email addresses must remain unique in the system
+- The `rolDescripcion` field is ignored in the request; it's populated based on `idRol`
+- If the user doesn't exist, the `value` will be `false` and an error message will be provided

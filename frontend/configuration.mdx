@@ -1,0 +1,346 @@
+---
+title: 'Frontend Configuration'
+description: 'Configure the Angular 14 application with Material Design for Sistema Venta'
+icon: 'gear'
+---
+
+## Overview
+
+Sistema Venta frontend is built with Angular 14 and Angular Material 14.2.7, providing a modern, responsive sales management interface. This guide covers environment configuration, Material Design setup, and service configuration.
+
+## Prerequisites
+
+Before configuring the application, ensure you have:
+
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- Angular CLI 14.2.4
+
+<Note>
+  The application uses TypeScript 4.7.2 with strict mode enabled for enhanced type safety.
+</Note>
+
+## Project Structure
+
+The application follows Angular best practices with a modular architecture:
+
+```
+AppSistemaVenta/
+├── src/
+│   ├── app/
+│   │   ├── Components/          # UI Components
+│   │   │   ├── login/          # Login component
+│   │   │   └── layout/         # Main layout with nested pages
+│   │   │       ├── Pages/      # Feature pages
+│   │   │       │   ├── dash-board/
+│   │   │       │   ├── usuario/
+│   │   │       │   ├── producto/
+│   │   │       │   ├── venta/
+│   │   │       │   ├── historial-venta/
+│   │   │       │   └── reporte/
+│   │   │       └── Modales/    # Modal dialogs
+│   │   ├── Services/           # API services
+│   │   ├── Interfaces/         # TypeScript interfaces
+│   │   └── Reutilizable/       # Shared modules
+│   ├── environments/           # Environment configs
+│   └── assets/                 # Static assets
+└── angular.json                # Angular configuration
+```
+
+## Environment Configuration
+
+<Steps>
+  <Step title="Development Environment">
+    Configure the development environment in `src/environments/environment.ts`:
+
+    ```typescript src/environments/environment.ts
+    export const environment = {
+      production: false,
+      endpoint: "http://localhost:5000/api/"  // Your backend API URL
+    };
+    ```
+
+    <Note>
+      Update the `endpoint` value to match your backend API URL. The default is an empty string.
+    </Note>
+  </Step>
+
+  <Step title="Production Environment">
+    Configure the production environment in `src/environments/environment.prod.ts`:
+
+    ```typescript src/environments/environment.prod.ts
+    export const environment = {
+      production: true,
+      endpoint: "https://your-production-api.com/api/"  // Your production API URL
+    };
+    ```
+
+    During production builds, Angular automatically replaces `environment.ts` with `environment.prod.ts`.
+  </Step>
+
+  <Step title="Environment File Replacement">
+    The file replacement is configured in `angular.json`:
+
+    ```json angular.json
+    "production": {
+      "fileReplacements": [
+        {
+          "replace": "src/environments/environment.ts",
+          "with": "src/environments/environment.prod.ts"
+        }
+      ],
+      "outputHashing": "all"
+    }
+    ```
+  </Step>
+</Steps>
+
+## Angular Material Configuration
+
+### Installed Material Modules
+
+The application uses a comprehensive set of Angular Material components configured in `shared.module.ts`:
+
+<CodeGroup>
+```typescript src/app/Reutilizable/shared/shared.module.ts
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+
+// Angular Material Components
+import { MatCardModule } from '@angular/material/card';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { LayoutModule } from '@angular/cdk/layout';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MomentDateModule } from '@angular/material-moment-adapter';
+
+@NgModule({
+  exports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    HttpClientModule,
+    MatCardModule,
+    MatInputModule,
+    MatSelectModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
+    MatGridListModule,
+    LayoutModule,
+    MatToolbarModule,
+    MatButtonModule,
+    MatSidenavModule,
+    MatIconModule,
+    MatListModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatDialogModule,
+    MatSnackBarModule,
+    MatTooltipModule,
+    MatAutocompleteModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MomentDateModule
+  ],
+  providers: [
+    MatDatepickerModule,
+    MatNativeDateModule
+  ]
+})
+export class SharedModule { }
+```
+</CodeGroup>
+
+### Material Theme
+
+The application uses the pre-built Indigo-Pink theme:
+
+```json angular.json
+"styles": [
+  "./node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
+  "src/styles.css"
+]
+```
+
+<Note>
+  You can customize the theme by creating a custom theme file. See [Angular Material Theming Guide](https://material.angular.io/guide/theming) for details.
+</Note>
+
+## Routing Configuration
+
+### Application Routes
+
+The application uses lazy loading for the main layout module:
+
+```typescript src/app/app-routing.module.ts
+const routes: Routes = [
+  { path: '', component: LoginComponent, pathMatch: "full" },
+  { path: 'login', component: LoginComponent, pathMatch: "full" },
+  { 
+    path: 'pages', 
+    loadChildren: () => import("./Components/layout/layout.module").then(m => m.LayoutModule)
+  },
+  { path: '**', redirectTo: 'login', pathMatch: "full" }
+];
+```
+
+### Layout Routes
+
+Authenticated pages are nested under the layout component:
+
+```typescript src/app/Components/layout/layout-routing.module.ts
+const routes: Routes = [{
+  path: '',
+  component: LayoutComponent,
+  children: [
+    { path: 'dashboard', component: DashBoardComponent },
+    { path: 'usuarios', component: UsuarioComponent },
+    { path: 'productos', component: ProductoComponent },
+    { path: 'venta', component: VentaComponent },
+    { path: 'historial_venta', component: HistorialVentaComponent },
+    { path: 'reportes', component: ReporteComponent }
+  ]
+}];
+```
+
+## Service Configuration
+
+### API Services
+
+All services follow a consistent pattern using HttpClient and environment configuration:
+
+<CodeGroup>
+```typescript src/app/Services/usuario.service.ts
+import { Injectable } from '@angular/core';
+import { HttpClient } from "@angular/common/http";
+import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
+import { ResponseApi } from '../Interfaces/response-api';
+import { Usuario } from '../Interfaces/usuario';
+import { Login } from '../Interfaces/login';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class UsuarioService {
+  private urlApi: string = environment.endpoint + "Usuario/";
+
+  constructor(private http: HttpClient) { }
+
+  iniciarSesion(request: Login): Observable<ResponseApi> {
+    return this.http.post<ResponseApi>(`${this.urlApi}IniciarSesion`, request)
+  }
+
+  lista(): Observable<ResponseApi> {
+    return this.http.get<ResponseApi>(`${this.urlApi}Lista`)
+  }
+
+  guardar(request: Usuario): Observable<ResponseApi> {
+    return this.http.post<ResponseApi>(`${this.urlApi}Guardar`, request)
+  }
+
+  editar(request: Usuario): Observable<ResponseApi> {
+    return this.http.put<ResponseApi>(`${this.urlApi}Editar`, request)
+  }
+
+  eliminar(id: number): Observable<ResponseApi> {
+    return this.http.delete<ResponseApi>(`${this.urlApi}Eliminar/${id}`)
+  }
+}
+```
+</CodeGroup>
+
+### Available Services
+
+The application includes the following service files:
+
+| Service | Purpose | API Endpoint |
+|---------|---------|-------------|
+| `usuario.service.ts` | User management and authentication | `/Usuario/` |
+| `producto.service.ts` | Product catalog management | `/Producto/` |
+| `venta.service.ts` | Sales transaction processing | `/Venta/` |
+| `categoria.service.ts` | Product category management | `/Categoria/` |
+| `rol.service.ts` | User role management | `/Rol/` |
+| `menu.service.ts` | Navigation menu data | `/Menu/` |
+| `dash-board.service.ts` | Dashboard analytics | `/DashBoard/` |
+
+## TypeScript Configuration
+
+The application uses strict TypeScript settings:
+
+<CodeGroup>
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "sourceMap": true,
+    "downlevelIteration": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "target": "es2020",
+    "module": "es2020",
+    "lib": ["es2020", "dom"]
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  }
+}
+```
+</CodeGroup>
+
+## Additional Libraries
+
+### Key Dependencies
+
+<Tabs>
+  <Tab title="UI & Charts">
+    - **Chart.js** (^3.9.1): For dashboard visualizations
+    - **SweetAlert2** (^11.6.16): Enhanced alert dialogs
+    - **Angular Material** (^14.2.7): Material Design components
+  </Tab>
+  
+  <Tab title="Data Handling">
+    - **Moment.js** (^2.29.4): Date manipulation and formatting
+    - **XLSX** (^0.18.5): Excel file export functionality
+    - **RxJS** (~7.5.0): Reactive programming utilities
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Development" icon="code" href="/frontend/development">
+    Learn how to run the development server and work with the codebase
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/frontend/deployment">
+    Deploy your application to production environments
+  </Card>
+</CardGroup>

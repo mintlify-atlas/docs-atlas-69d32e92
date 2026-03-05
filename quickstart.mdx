@@ -1,80 +1,306 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: 'Quickstart Guide'
+description: 'Get Sistema Venta up and running in minutes'
 ---
 
-## Get started in three steps
+<Note>
+  Sistema Venta is a full-stack point of sale system built with .NET 7.0 and Angular 14. This guide will help you set up both the backend API and frontend application.
+</Note>
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+Before you begin, ensure you have the following installed:
 
 <CardGroup cols={2}>
+  <Card title=".NET 7.0 SDK" icon="code">
+    Download from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/7.0)
+  </Card>
+  <Card title="Node.js 16+" icon="node">
+    Download from [nodejs.org](https://nodejs.org)
+  </Card>
+  <Card title="SQL Server" icon="database">
+    SQL Server 2019+ or SQL Server Express
+  </Card>
+  <Card title="Angular CLI" icon="angular">
+    Install globally: `npm install -g @angular/cli`
+  </Card>
+</CardGroup>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+## Installation
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the Sistema Venta repository to your local machine:
+    
+    ```bash
+    git clone <repository-url>
+    cd sistema-venta
+    ```
+  </Step>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+  <Step title="Set Up the Database">
+    Create a new SQL Server database for the application. You'll need to execute the database schema script to create the required tables:
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+    <CodeGroup>
+    ```sql Tables Created
+    -- Core tables
+    CREATE TABLE Rol (...)
+    CREATE TABLE Usuario (...)
+    CREATE TABLE Menu (...)
+    CREATE TABLE MenuRol (...)
+    CREATE TABLE Categoria (...)
+    CREATE TABLE Producto (...)
+    CREATE TABLE Venta (...)
+    CREATE TABLE DetalleVenta (...)
+    CREATE TABLE NumeroDocumento (...)
+    ```
+    </CodeGroup>
 
+    The database includes the following main entities:
+    - **Rol**: User roles and permissions
+    - **Usuario**: System users with authentication
+    - **Categoria**: Product categories
+    - **Producto**: Product catalog with stock management
+    - **Venta**: Sales transactions
+    - **DetalleVenta**: Line items for each sale
+    - **Menu**: Dynamic menu based on user roles
+  </Step>
+
+  <Step title="Configure the Backend API">
+    Navigate to the API project and update the connection string:
+
+    ```bash
+    cd APISistemaVenta/SistemaVenta.API
+    ```
+
+    Edit `appsettings.json` and set your SQL Server connection string:
+
+    ```json appsettings.json
+    {
+      "ConnectionStrings": {
+        "cadenaSQL": "Server=localhost;Database=DBVenta;Trusted_Connection=True;TrustServerCertificate=True"
+      },
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "AllowedHosts": "*"
+    }
+    ```
+
+    <Warning>
+      Make sure the database name matches the one you created in Step 2. Adjust the `Server` value to match your SQL Server instance.
+    </Warning>
+  </Step>
+
+  <Step title="Restore Backend Dependencies">
+    Restore NuGet packages for all projects in the solution:
+
+    ```bash
+    dotnet restore
+    ```
+
+    The solution includes 7 projects:
+    - **SistemaVenta.API**: REST API controllers and configuration
+    - **SistemaVenta.BLL**: Business Logic Layer with services
+    - **SistemaVenta.DAL**: Data Access Layer with repositories
+    - **SistemaVenta.DTO**: Data Transfer Objects
+    - **SistemaVenta.Model**: Entity Framework models
+    - **SistemaVenta.IOC**: Dependency injection configuration
+    - **SistemaVenta.Utility**: Shared utilities and AutoMapper profiles
+  </Step>
+
+  <Step title="Run the Backend API">
+    Start the .NET API server:
+
+    ```bash
+    dotnet run --project SistemaVenta.API
+    ```
+
+    The API will start on `https://localhost:7XXX` (the exact port will be displayed in the console).
+
+    <Note>
+      Swagger documentation is automatically enabled in development mode. Access it at `https://localhost:7XXX/swagger`
+    </Note>
+
+    You should see output similar to:
+
+    ```bash
+    info: Microsoft.Hosting.Lifetime[14]
+          Now listening on: https://localhost:7290
+    info: Microsoft.Hosting.Lifetime[0]
+          Application started. Press Ctrl+C to shut down.
+    ```
+  </Step>
+
+  <Step title="Configure the Frontend">
+    In a new terminal, navigate to the Angular application:
+
+    ```bash
+    cd AppSistemaVenta
+    ```
+
+    Install the required npm packages:
+
+    ```bash
+    npm install
+    ```
+
+    This will install all dependencies including:
+    - Angular 14.2 with Material Design
+    - Chart.js for dashboard visualizations
+    - Moment.js for date handling
+    - SweetAlert2 for user-friendly alerts
+    - XLSX for Excel export functionality
+  </Step>
+
+  <Step title="Update API Endpoint">
+    Configure the frontend to connect to your backend API. Edit the environment configuration file to point to your API URL:
+
+    ```typescript src/environments/environment.ts
+    export const environment = {
+      production: false,
+      apiUrl: 'https://localhost:7290/api'  // Update with your API port
+    };
+    ```
+  </Step>
+
+  <Step title="Run the Frontend Application">
+    Start the Angular development server:
+
+    ```bash
+    npm start
+    ```
+
+    The application will be available at `http://localhost:4200`
+
+    <Note>
+      The Angular CLI will automatically open your default browser. The app will reload automatically when you make changes to the source code.
+    </Note>
+  </Step>
+</Steps>
+
+## Verify the Installation
+
+To verify that everything is working correctly:
+
+<Steps>
+  <Step title="Access the Application">
+    Open your browser and navigate to `http://localhost:4200`
+  </Step>
+
+  <Step title="Test the Login">
+    If you have seeded the database with initial data, try logging in with a test user account.
+  </Step>
+
+  <Step title="Check the API">
+    Visit `https://localhost:7XXX/swagger` to view the API documentation and test endpoints.
+
+    Key API endpoints available:
+    - `POST /api/Usuario/Login` - User authentication
+    - `GET /api/Producto/Lista` - Get product list
+    - `POST /api/Venta/Registrar` - Register a new sale
+    - `GET /api/DashBoard` - Get dashboard statistics
+  </Step>
+</Steps>
+
+## Development Workflow
+
+Once your environment is set up, here's a typical development workflow:
+
+<CodeGroup>
+```bash Backend Development
+# Navigate to API project
+cd APISistemaVenta/SistemaVenta.API
+
+# Run with hot reload
+dotnet watch run
+```
+
+```bash Frontend Development
+# Navigate to Angular project
+cd AppSistemaVenta
+
+# Run with hot reload
+ng serve --open
+```
+
+```bash Database Migrations
+# If you make model changes, update the database
+cd APISistemaVenta/SistemaVenta.DAL
+
+# Add migration
+dotnet ef migrations add MigrationName
+
+# Apply migration
+dotnet ef database update
+```
+</CodeGroup>
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Database connection fails">
+    **Error**: `SqlException: A network-related or instance-specific error occurred`
+
+    **Solution**: 
+    1. Verify SQL Server is running
+    2. Check the connection string in `appsettings.json`
+    3. Ensure the database exists
+    4. If using Windows Authentication, add `Integrated Security=true` to the connection string
+  </Accordion>
+
+  <Accordion title="CORS errors in the frontend">
+    **Error**: `Access to XMLHttpRequest has been blocked by CORS policy`
+
+    **Solution**: The API already includes CORS configuration in `Program.cs:14-21`. Ensure the Angular app URL matches the allowed origins. The current configuration allows all origins in development.
+  </Accordion>
+
+  <Accordion title="Angular module errors">
+    **Error**: `Module not found` or `Cannot find module`
+
+    **Solution**:
+    ```bash
+    # Clear node_modules and reinstall
+    rm -rf node_modules package-lock.json
+    npm install
+    ```
+  </Accordion>
+
+  <Accordion title="Port already in use">
+    **Error**: `Address already in use`
+
+    **Solution**:
+    ```bash
+    # For .NET API (Windows)
+    netstat -ano | findstr :7290
+    taskkill /PID <PID> /F
+
+    # For Angular (use different port)
+    ng serve --port 4201
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/architecture">
+    Learn about the layered architecture and project structure
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/auth/login">
+    Explore the complete API documentation
+  </Card>
+  <Card title="Frontend Setup" icon="window" href="/frontend/configuration">
+    Understand the Angular application structure
+  </Card>
+  <Card title="Database Schema" icon="database" href="/backend/database">
+    Review the complete database schema and relationships
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Need help? Visit the [GitHub repository](https://github.com/EmersonVR/sistemaVenta) or open an issue.
 </Note>

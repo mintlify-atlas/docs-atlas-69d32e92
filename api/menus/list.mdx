@@ -1,0 +1,138 @@
+---
+title: List User Menus
+api: GET /api/Menu/Lista
+---
+
+Retrieves the list of menu items accessible to a specific user based on their permissions.
+
+## Endpoint
+
+```
+GET /api/Menu/Lista
+```
+
+## Query Parameters
+
+<ParamField query="idUsuario" type="integer" required>
+  The unique identifier of the user whose menu items should be retrieved
+</ParamField>
+
+## Response
+
+Returns an array of menu items the user has access to.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="value" type="array">
+  List of menu items accessible to the user
+  
+  <Expandable title="MenuDTO properties">
+    <ResponseField name="idMenu" type="integer">
+      Unique identifier for the menu item
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Display name of the menu item
+    </ResponseField>
+    
+    <ResponseField name="icono" type="string">
+      Icon identifier or class name for the menu item
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      Navigation URL or route for the menu item
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.example.com/api/Menu/Lista?idUsuario=5" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const userId = 5;
+const response = await fetch(`https://api.example.com/api/Menu/Lista?idUsuario=${userId}`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+```csharp C#
+using var client = new HttpClient();
+int userId = 5;
+var response = await client.GetAsync($"https://api.example.com/api/Menu/Lista?idUsuario={userId}");
+var data = await response.Content.ReadAsStringAsync();
+```
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "status": true,
+  "value": [
+    {
+      "idMenu": 1,
+      "nombre": "Dashboard",
+      "icono": "dashboard-icon",
+      "url": "/dashboard"
+    },
+    {
+      "idMenu": 2,
+      "nombre": "Usuarios",
+      "icono": "users-icon",
+      "url": "/usuarios"
+    },
+    {
+      "idMenu": 3,
+      "nombre": "Productos",
+      "icono": "products-icon",
+      "url": "/productos"
+    },
+    {
+      "idMenu": 4,
+      "nombre": "Ventas",
+      "icono": "sales-icon",
+      "url": "/ventas"
+    },
+    {
+      "idMenu": 5,
+      "nombre": "Reportes",
+      "icono": "reports-icon",
+      "url": "/reportes"
+    }
+  ],
+  "msg": null
+}
+```
+
+## Error Response
+
+```json
+{
+  "status": false,
+  "value": null,
+  "msg": "Error retrieving menu list for user"
+}
+```
+
+## Use Cases
+
+- Build dynamic navigation menus based on user permissions
+- Implement role-based UI rendering
+- Control feature access in single-page applications
+- Generate breadcrumbs and navigation hierarchies

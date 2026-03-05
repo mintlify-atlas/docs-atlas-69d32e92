@@ -1,0 +1,114 @@
+---
+title: Create Category
+api: POST /api/Categoria/Guardar
+---
+
+<Warning>
+  This endpoint is not yet implemented in the current version of the API. The documentation below represents the expected implementation.
+</Warning>
+
+Creates a new category in the system.
+
+## Endpoint
+
+```
+POST /api/Categoria/Guardar
+```
+
+## Request Body
+
+<ParamField body="Nombre" type="string" required>
+  Name of the category to create
+</ParamField>
+
+## Response
+
+Returns a `Response<CategoriaDTO>` wrapper containing the created category.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="value" type="CategoriaDTO">
+  The created category object
+  
+  <ResponseField name="IdCategoria" type="integer">
+    Unique identifier for the created category
+  </ResponseField>
+  
+  <ResponseField name="Nombre" type="string">
+    Name of the category
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false, null otherwise
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST "https://api.example.com/api/Categoria/Guardar" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Office Supplies"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Categoria/Guardar', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    nombre: 'Office Supplies'
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```csharp C#
+using var client = new HttpClient();
+var categoria = new { nombre = "Office Supplies" };
+var response = await client.PostAsJsonAsync(
+  "https://api.example.com/api/Categoria/Guardar", 
+  categoria
+);
+var content = await response.Content.ReadAsStringAsync();
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json Success Response
+{
+  "status": true,
+  "value": {
+    "idCategoria": 4,
+    "nombre": "Office Supplies"
+  },
+  "msg": null
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "value": null,
+  "msg": "Category name already exists"
+}
+```
+
+## Response Codes
+
+| Code | Description |
+|------|-------------|
+| 200  | Category created successfully |
+| 400  | Invalid request body |
+| 500  | Internal server error |

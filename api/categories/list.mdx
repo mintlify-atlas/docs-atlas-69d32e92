@@ -1,0 +1,107 @@
+---
+title: List Categories
+api: GET /api/Categoria/Lista
+---
+
+Retrieves all categories in the system.
+
+## Endpoint
+
+```
+GET /api/Categoria/Lista
+```
+
+## Request
+
+This endpoint does not require any parameters.
+
+## Response
+
+Returns a `Response<List<CategoriaDTO>>` wrapper containing the list of categories.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="value" type="CategoriaDTO[]">
+  Array of category objects
+  
+  <ResponseField name="IdCategoria" type="integer">
+    Unique identifier for the category
+  </ResponseField>
+  
+  <ResponseField name="Nombre" type="string">
+    Name of the category
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false, null otherwise
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET "https://api.example.com/api/Categoria/Lista" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Categoria/Lista', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```csharp C#
+using var client = new HttpClient();
+var response = await client.GetAsync("https://api.example.com/api/Categoria/Lista");
+var content = await response.Content.ReadAsStringAsync();
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json Success Response
+{
+  "status": true,
+  "value": [
+    {
+      "idCategoria": 1,
+      "nombre": "Electronics"
+    },
+    {
+      "idCategoria": 2,
+      "nombre": "Clothing"
+    },
+    {
+      "idCategoria": 3,
+      "nombre": "Food & Beverages"
+    }
+  ],
+  "msg": null
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "value": null,
+  "msg": "Error message describing what went wrong"
+}
+```
+
+## Response Codes
+
+| Code | Description |
+|------|-------------|
+| 200  | Categories retrieved successfully |
+| 500  | Internal server error |

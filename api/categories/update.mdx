@@ -1,0 +1,114 @@
+---
+title: Update Category
+api: PUT /api/Categoria/Editar
+---
+
+<Warning>
+  This endpoint is not yet implemented in the current version of the API. The documentation below represents the expected implementation.
+</Warning>
+
+Updates an existing category in the system.
+
+## Endpoint
+
+```
+PUT /api/Categoria/Editar
+```
+
+## Request Body
+
+<ParamField body="IdCategoria" type="integer" required>
+  Unique identifier of the category to update
+</ParamField>
+
+<ParamField body="Nombre" type="string" required>
+  New name for the category
+</ParamField>
+
+## Response
+
+Returns a `Response<bool>` wrapper indicating success or failure.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="value" type="boolean">
+  True if the category was updated successfully, false otherwise
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false, null otherwise
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X PUT "https://api.example.com/api/Categoria/Editar" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "idCategoria": 4,
+    "nombre": "Office & Stationery"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Categoria/Editar', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    idCategoria: 4,
+    nombre: 'Office & Stationery'
+  })
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```csharp C#
+using var client = new HttpClient();
+var categoria = new 
+{ 
+  idCategoria = 4, 
+  nombre = "Office & Stationery" 
+};
+var response = await client.PutAsJsonAsync(
+  "https://api.example.com/api/Categoria/Editar", 
+  categoria
+);
+var content = await response.Content.ReadAsStringAsync();
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json Success Response
+{
+  "status": true,
+  "value": true,
+  "msg": null
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "value": false,
+  "msg": "Category not found"
+}
+```
+
+## Response Codes
+
+| Code | Description |
+|------|-------------|
+| 200  | Category updated successfully |
+| 400  | Invalid request body |
+| 404  | Category not found |
+| 500  | Internal server error |

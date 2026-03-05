@@ -1,0 +1,814 @@
+---
+title: "Deployment"
+description: "Deploy the .NET 7 API to production environments including IIS, Azure, and Docker"
+---
+
+## Overview
+
+This guide covers deployment options for Sistema Venta API, including IIS, Azure App Service, Docker containers, and self-hosted scenarios.
+
+## Pre-Deployment Checklist
+
+<Steps>
+
+### Step 1: Configure Production Settings
+
+Create or update `appsettings.Production.json`:
+
+```json appsettings.Production.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore": "Warning"
+    }
+  },
+  "AllowedHosts": "yourdomain.com",
+  "ConnectionStrings": {
+    "cadenaSQL": "${SQL_CONNECTION_STRING}"
+  }
+}
+```
+
+### Step 2: Update CORS Policy
+
+Restrict CORS to your frontend domain in `Program.cs:14`:
+
+```csharp Program.cs
+builder.Services.AddCors(options => {
+    options.AddPolicy("NuevaPolitica", app => {
+        app.WithOrigins("https://yourdomain.com", "https://www.yourdomain.com")
+           .AllowAnyHeader()
+           .AllowAnyMethod()
+           .AllowCredentials();
+    });
+});
+```
+
+<Warning>
+Never use `AllowAnyOrigin()` in production. Always specify exact origins.
+</Warning>
+
+### Step 3: Enable HTTPS Redirection
+
+Add HTTPS redirection middleware:
+
+```csharp Program.cs
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors("NuevaPolitica");
+app.UseAuthorization();
+app.MapControllers();
+```
+
+### Step 4: Secure Connection Strings
+
+Use environment variables or secrets management instead of plain text.
+
+### Step 5: Build Release Configuration
+
+Build the project in Release mode:
+
+```bash
+dotnet build --configuration Release
+```
+
+</Steps>
+
+## Deployment Options
+
+### Option 1: IIS (Internet Information Services)
+
+<Steps>
+
+#### Install Prerequisites
+
+1. Install .NET 7 Hosting Bundle from Microsoft:
+   - Download from: https://dotnet.microsoft.com/download/dotnet/7.0
+   - Install "ASP.NET Core Runtime 7.0.x - Windows Hosting Bundle"
+   - Restart IIS: `iisreset`
+
+2. Enable IIS features:
+   - Open "Turn Windows features on or off"
+   - Enable "Internet Information Services"
+   - Enable "World Wide Web Services" → "Application Development Features" → "ASP.NET 4.8"
+
+#### Publish the Application
+
+```bash
+cd APISistemaVenta/SistemaVenta.API
+dotnet publish --configuration Release --output ./publish
+```
+
+This creates a publish folder with all necessary files.
+
+#### Configure IIS
+
+1. Open **IIS Manager** (inetmgr.exe)
+2. Right-click **Sites** → **Add Website**
+3. Configure:
+   - **Site name:** SistemaVentaAPI
+   - **Physical path:** Path to your `publish` folder
+   - **Binding:** 
+     - Type: https
+     - Port: 443
+     - Host name: api.yourdomain.com
+   - **SSL certificate:** Select or import your SSL certificate
+
+4. Set Application Pool:
+   - Right-click your site → **Manage Website** → **Advanced Settings**
+   - Application Pool: Create new pool
+   - .NET CLR Version: **No Managed Code**
+   - Managed Pipeline Mode: **Integrated**
+
+#### Configure Application Pool Identity
+
+1. Go to **Application Pools**
+2. Select your pool → **Advanced Settings**
+3. Identity: 
+   - For SQL Windows Auth: Use **ApplicationPoolIdentity** or domain account
+   - Grant this identity access to SQL Server
+
+#### Set Environment Variables
+
+1. Select your site in IIS Manager
+2. Open **Configuration Editor**
+3. Section: `system.webServer/aspNetCore`
+4. Add environment variables:
+   ```xml
+   <environmentVariables>
+     <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
+     <environmentVariable name="SQL_CONNECTION_STRING" value="Your-Connection-String" />
+   </environmentVariables>
+   ```
+
+#### Test Deployment
+
+Navigate to `https://api.yourdomain.com/swagger` (if Swagger is enabled) or test your API endpoints.
+
+</Steps>
+
+<Note>
+**Troubleshooting IIS:**
+- Check Event Viewer → Windows Logs → Application for errors
+- Enable detailed errors: Set `ASPNETCORE_ENVIRONMENT=Development` temporarily
+- Verify .NET Hosting Bundle is installed: Check for `aspnetcorev2.dll` in IIS modules
+- Ensure application pool identity has file system permissions
+</Note>
+
+### Option 2: Azure App Service
+
+<Steps>
+
+#### Create Azure Resources
+
+1. **Create Azure SQL Database:**
+
+```bash
+az sql server create \
+  --name sistemaventa-sql \
+  --resource-group your-resource-group \
+  --location eastus \
+  --admin-user sqladmin \
+  --admin-password YourStrongPassword123!
+
+az sql db create \
+  --resource-group your-resource-group \
+  --server sistemaventa-sql \
+  --name DBVENTA \
+  --service-objective S0
+```
+
+2. **Create App Service:**
+
+```bash
+az appservice plan create \
+  --name sistemaventa-plan \
+  --resource-group your-resource-group \
+  --sku B1 \
+  --is-linux
+
+az webapp create \
+  --resource-group your-resource-group \
+  --plan sistemaventa-plan \
+  --name sistemaventa-api \
+  --runtime "DOTNET|7.0"
+```
+
+#### Configure Connection String
+
+Add connection string as Application Setting:
+
+```bash
+az webapp config connection-string set \
+  --resource-group your-resource-group \
+  --name sistemaventa-api \
+  --settings cadenaSQL="Server=tcp:sistemaventa-sql.database.windows.net,1433;Database=DBVENTA;User ID=sqladmin;Password=YourStrongPassword123!;Encrypt=True;" \
+  --connection-string-type SQLAzure
+```
+
+#### Deploy Using Visual Studio
+
+1. Right-click **SistemaVenta.API** project → **Publish**
+2. Select **Azure** → **Azure App Service (Linux)**
+3. Sign in and select your App Service
+4. Click **Publish**
+
+#### Deploy Using Azure CLI
+
+```bash
+# Build and publish
+dotnet publish --configuration Release --output ./publish
+
+# Create deployment package
+cd publish
+zip -r deploy.zip .
+
+# Deploy to Azure
+az webapp deployment source config-zip \
+  --resource-group your-resource-group \
+  --name sistemaventa-api \
+  --src deploy.zip
+```
+
+#### Configure App Settings
+
+In Azure Portal:
+
+1. Go to your App Service
+2. **Configuration** → **Application settings**
+3. Add:
+   - `ASPNETCORE_ENVIRONMENT` = `Production`
+   - `WEBSITE_RUN_FROM_PACKAGE` = `1`
+
+4. **Configuration** → **General settings**
+   - **Stack:** .NET
+   - **Major version:** 7
+   - **HTTPS Only:** On
+
+#### Enable Logging
+
+```bash
+az webapp log config \
+  --resource-group your-resource-group \
+  --name sistemaventa-api \
+  --application-logging filesystem \
+  --level information
+
+# View logs
+az webapp log tail \
+  --resource-group your-resource-group \
+  --name sistemaventa-api
+```
+
+</Steps>
+
+<Note>
+**Azure Pricing Considerations:**
+- **B1 App Service Plan:** ~$13/month
+- **S0 SQL Database:** ~$15/month
+- Consider Azure SQL Database serverless tier for development
+</Note>
+
+### Option 3: Docker Container
+
+<Steps>
+
+#### Create Dockerfile
+
+Create `Dockerfile` in the solution root:
+
+```dockerfile Dockerfile
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+WORKDIR /src
+
+# Copy project files
+COPY ["SistemaVenta.API/SistemaVenta.API.csproj", "SistemaVenta.API/"]
+COPY ["SistemaVenta.BLL/SistemaVenta.BLL.csproj", "SistemaVenta.BLL/"]
+COPY ["SistemaVenta.DAL/SistemaVenta.DAL.csproj", "SistemaVenta.DAL/"]
+COPY ["SistemaVenta.DTO/SistemaVenta.DTO.csproj", "SistemaVenta.DTO/"]
+COPY ["SistemaVenta.IOC/SistemaVenta.IOC.csproj", "SistemaVenta.IOC/"]
+COPY ["SistemaVenta.Model/SistemaVenta.Model.csproj", "SistemaVenta.Model/"]
+COPY ["SistemaVenta.Utility/SistemaVenta.Utility.csproj", "SistemaVenta.Utility/"]
+
+# Restore dependencies
+RUN dotnet restore "SistemaVenta.API/SistemaVenta.API.csproj"
+
+# Copy everything else
+COPY . .
+
+# Build
+WORKDIR "/src/SistemaVenta.API"
+RUN dotnet build "SistemaVenta.API.csproj" -c Release -o /app/build
+
+# Publish
+FROM build AS publish
+RUN dotnet publish "SistemaVenta.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS final
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "SistemaVenta.API.dll"]
+```
+
+#### Create docker-compose.yml
+
+For local testing with SQL Server:
+
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__cadenaSQL=Server=sqlserver;Database=DBVENTA;User Id=sa;Password=YourStrong@Password;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver
+    networks:
+      - sistemaventa-network
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Password
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - sistemaventa-network
+
+volumes:
+  sqlserver-data:
+
+networks:
+  sistemaventa-network:
+    driver: bridge
+```
+
+#### Build and Run
+
+```bash
+# Build the image
+docker build -t sistemaventa-api:latest .
+
+# Run with docker-compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f api
+
+# Stop services
+docker-compose down
+```
+
+#### Push to Container Registry
+
+```bash
+# Tag for Docker Hub
+docker tag sistemaventa-api:latest yourusername/sistemaventa-api:latest
+
+# Push to Docker Hub
+docker login
+docker push yourusername/sistemaventa-api:latest
+
+# Or push to Azure Container Registry
+az acr login --name yourregistry
+docker tag sistemaventa-api:latest yourregistry.azurecr.io/sistemaventa-api:latest
+docker push yourregistry.azurecr.io/sistemaventa-api:latest
+```
+
+</Steps>
+
+### Option 4: Self-Hosted (Kestrel)
+
+<Steps>
+
+#### Publish Application
+
+```bash
+dotnet publish --configuration Release --runtime linux-x64 --self-contained false
+```
+
+#### Create Systemd Service (Linux)
+
+Create `/etc/systemd/system/sistemaventa-api.service`:
+
+```ini
+[Unit]
+Description=Sistema Venta API
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+WorkingDirectory=/var/www/sistemaventa-api
+ExecStart=/usr/bin/dotnet /var/www/sistemaventa-api/SistemaVenta.API.dll
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=sistemaventa-api
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl enable sistemaventa-api
+sudo systemctl start sistemaventa-api
+sudo systemctl status sistemaventa-api
+```
+
+#### Configure Nginx as Reverse Proxy
+
+Create `/etc/nginx/sites-available/sistemaventa-api`:
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.yourdomain.com;
+    
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name api.yourdomain.com;
+
+    ssl_certificate /etc/ssl/certs/yourdomain.crt;
+    ssl_certificate_key /etc/ssl/private/yourdomain.key;
+
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection keep-alive;
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Enable the site:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/sistemaventa-api /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+</Steps>
+
+## Environment-Specific Configuration
+
+### Development
+
+```json appsettings.Development.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
+    }
+  },
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=localhost;Database=DBVENTA;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+### Staging
+
+```json appsettings.Staging.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "cadenaSQL": "${SQL_CONNECTION_STRING}"
+  }
+}
+```
+
+### Production
+
+```json appsettings.Production.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "api.yourdomain.com",
+  "ConnectionStrings": {
+    "cadenaSQL": "${SQL_CONNECTION_STRING}"
+  }
+}
+```
+
+## Security Best Practices
+
+<Steps>
+
+### Step 1: Use HTTPS Only
+
+```csharp Program.cs
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+    app.UseHsts();
+}
+```
+
+### Step 2: Implement API Key Authentication
+
+```csharp
+builder.Services.AddAuthentication("ApiKey")
+    .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>("ApiKey", options => { });
+```
+
+### Step 3: Add Rate Limiting
+
+```csharp
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", opt =>
+    {
+        opt.PermitLimit = 100;
+        opt.Window = TimeSpan.FromMinutes(1);
+    });
+});
+```
+
+### Step 4: Enable Request Logging
+
+```csharp
+app.UseHttpLogging();
+```
+
+### Step 5: Sanitize Error Messages
+
+Disable detailed errors in production (already configured in Program.cs).
+
+</Steps>
+
+## Health Checks
+
+Add health check endpoint:
+
+```csharp Program.cs
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<DbventaContext>();
+
+app.MapHealthChecks("/health");
+```
+
+Test: `curl https://api.yourdomain.com/health`
+
+## Monitoring and Logging
+
+### Application Insights (Azure)
+
+```bash
+dotnet add package Microsoft.ApplicationInsights.AspNetCore
+```
+
+```csharp Program.cs
+builder.Services.AddApplicationInsightsTelemetry(options =>
+{
+    options.ConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+});
+```
+
+### Serilog
+
+```bash
+dotnet add package Serilog.AspNetCore
+dotnet add package Serilog.Sinks.File
+```
+
+```csharp Program.cs
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.File("logs/sistemaventa-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+```
+
+## Performance Optimization
+
+### Enable Response Compression
+
+```csharp
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
+
+app.UseResponseCompression();
+```
+
+### Add Response Caching
+
+```csharp
+builder.Services.AddResponseCaching();
+app.UseResponseCaching();
+```
+
+### Enable Output Caching (.NET 7+)
+
+```csharp
+builder.Services.AddOutputCache();
+app.UseOutputCache();
+```
+
+## Rollback Strategy
+
+### IIS
+
+1. Keep previous publish folder: `publish-backup-{date}`
+2. Update IIS site physical path to previous folder
+3. Restart application pool
+
+### Azure App Service
+
+1. Go to **Deployment slots**
+2. Swap staging slot back to production
+3. Or use **Deployment Center** → **Logs** → **Redeploy** previous version
+
+### Docker
+
+```bash
+# Tag versions
+docker tag sistemaventa-api:latest sistemaventa-api:v1.0.0
+
+# Rollback
+docker-compose down
+docker run -d sistemaventa-api:v1.0.0
+```
+
+## Post-Deployment Verification
+
+<Steps>
+
+### Step 1: Test Health Endpoint
+
+```bash
+curl https://api.yourdomain.com/health
+```
+
+### Step 2: Verify Database Connection
+
+Test an API endpoint that queries the database.
+
+### Step 3: Check Swagger (if enabled)
+
+```bash
+curl https://api.yourdomain.com/swagger
+```
+
+### Step 4: Monitor Logs
+
+Check application logs for errors.
+
+### Step 5: Performance Test
+
+Use tools like Apache Bench or k6 for load testing.
+
+</Steps>
+
+## Troubleshooting
+
+<Accordion title="502 Bad Gateway (IIS)">
+
+**Causes:**
+- Application pool stopped
+- .NET Hosting Bundle not installed
+- Application startup error
+
+**Solutions:**
+1. Check Event Viewer logs
+2. Enable stdout logging in `web.config`:
+   ```xml
+   <aspNetCore stdoutLogEnabled="true" stdoutLogFile=".\logs\stdout" />
+   ```
+3. Verify application pool is running
+4. Restart IIS: `iisreset`
+
+</Accordion>
+
+<Accordion title="Database Connection Timeout">
+
+**Causes:**
+- Incorrect connection string
+- Firewall blocking connection
+- SQL Server not accepting remote connections
+
+**Solutions:**
+1. Test connection string locally
+2. For Azure SQL: Add App Service IP to firewall rules
+3. Verify SQL Server TCP/IP is enabled
+4. Check connection string format
+
+</Accordion>
+
+<Accordion title="CORS Errors in Production">
+
+**Error:** `Access to fetch at 'https://api.yourdomain.com' from origin 'https://app.yourdomain.com' has been blocked by CORS policy`
+
+**Solution:**
+Update CORS policy in `Program.cs:14` to include your frontend origin.
+
+</Accordion>
+
+## Continuous Deployment
+
+### GitHub Actions
+
+Create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '7.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+    
+    - name: Publish
+      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/publish
+    
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'sistemaventa-api'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ${{env.DOTNET_ROOT}}/publish
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/backend/configuration">
+    Review configuration and dependency injection
+  </Card>
+  <Card title="Database Setup" icon="database" href="/backend/database">
+    Configure Entity Framework and database
+  </Card>
+</CardGroup>

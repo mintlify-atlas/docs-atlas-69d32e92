@@ -1,0 +1,131 @@
+---
+title: 'List Users'
+api: 'GET /api/Usuario/Lista'
+description: 'Retrieve a list of all users in the system'
+---
+
+## Endpoint
+
+```
+GET /api/Usuario/Lista
+```
+
+Retrieves all users registered in the Sistema Venta application, including their role information and status.
+
+## Response
+
+The endpoint returns a `Response<List<UsuarioDTO>>` wrapper containing the list of users.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="value" type="UsuarioDTO[]">
+  Array of user objects
+  
+  <Expandable title="UsuarioDTO properties">
+    <ResponseField name="idUsuario" type="integer">
+      Unique identifier for the user
+    </ResponseField>
+    
+    <ResponseField name="nombreCompleto" type="string">
+      Full name of the user
+    </ResponseField>
+    
+    <ResponseField name="correo" type="string">
+      Email address of the user
+    </ResponseField>
+    
+    <ResponseField name="idRol" type="integer">
+      Role identifier associated with the user
+    </ResponseField>
+    
+    <ResponseField name="rolDescripcion" type="string">
+      Description of the user's role
+    </ResponseField>
+    
+    <ResponseField name="clave" type="string">
+      User password (hashed)
+    </ResponseField>
+    
+    <ResponseField name="esActivo" type="integer">
+      Active status (1 = active, 0 = inactive)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.example.com/api/Usuario/Lista" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Usuario/Lista', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+```csharp C#
+var client = new HttpClient();
+var response = await client.GetAsync("https://api.example.com/api/Usuario/Lista");
+var content = await response.Content.ReadAsStringAsync();
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json Success
+{
+  "status": true,
+  "value": [
+    {
+      "idUsuario": 1,
+      "nombreCompleto": "Juan Pérez",
+      "correo": "juan.perez@example.com",
+      "idRol": 1,
+      "rolDescripcion": "Administrador",
+      "clave": "hashed_password",
+      "esActivo": 1
+    },
+    {
+      "idUsuario": 2,
+      "nombreCompleto": "María González",
+      "correo": "maria.gonzalez@example.com",
+      "idRol": 2,
+      "rolDescripcion": "Empleado",
+      "clave": "hashed_password",
+      "esActivo": 1
+    }
+  ],
+  "msg": null
+}
+```
+
+```json Error
+{
+  "status": false,
+  "value": null,
+  "msg": "Database connection error"
+}
+```
+</CodeGroup>
+
+## Implementation Details
+
+- **Controller**: `UsuarioController.cs:23`
+- **Service Method**: `IUsuarioService.Lista()`
+- **Response Type**: `Response<List<UsuarioDTO>>`
+- **HTTP Status**: Always returns 200 OK (check `status` field for actual result)

@@ -1,0 +1,174 @@
+---
+title: 'Create User'
+api: 'POST /api/Usuario/Guardar'
+description: 'Create a new user in the system'
+---
+
+## Endpoint
+
+```
+POST /api/Usuario/Guardar
+```
+
+Creates a new user in the Sistema Venta application with the specified details and role assignment.
+
+## Request Body
+
+<ParamField body="nombreCompleto" type="string" required>
+  Full name of the user
+</ParamField>
+
+<ParamField body="correo" type="string" required>
+  Email address for the user (must be unique)
+</ParamField>
+
+<ParamField body="idRol" type="integer" required>
+  Role identifier to assign to the user
+</ParamField>
+
+<ParamField body="clave" type="string" required>
+  Password for the user account
+</ParamField>
+
+<ParamField body="esActivo" type="integer" default={1}>
+  Active status (1 = active, 0 = inactive)
+</ParamField>
+
+## Response
+
+The endpoint returns a `Response<UsuarioDTO>` wrapper containing the created user object.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates if the user was successfully created
+</ResponseField>
+
+<ResponseField name="value" type="UsuarioDTO">
+  The created user object
+  
+  <Expandable title="UsuarioDTO properties">
+    <ResponseField name="idUsuario" type="integer">
+      Auto-generated unique identifier for the user
+    </ResponseField>
+    
+    <ResponseField name="nombreCompleto" type="string">
+      Full name of the user
+    </ResponseField>
+    
+    <ResponseField name="correo" type="string">
+      Email address of the user
+    </ResponseField>
+    
+    <ResponseField name="idRol" type="integer">
+      Role identifier associated with the user
+    </ResponseField>
+    
+    <ResponseField name="rolDescripcion" type="string">
+      Description of the user's role
+    </ResponseField>
+    
+    <ResponseField name="clave" type="string">
+      User password (hashed)
+    </ResponseField>
+    
+    <ResponseField name="esActivo" type="integer">
+      Active status (1 = active, 0 = inactive)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X POST "https://api.example.com/api/Usuario/Guardar" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombreCompleto": "Carlos Martínez",
+    "correo": "carlos.martinez@example.com",
+    "idRol": 2,
+    "clave": "securePassword123",
+    "esActivo": 1
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Usuario/Guardar', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    nombreCompleto: 'Carlos Martínez',
+    correo: 'carlos.martinez@example.com',
+    idRol: 2,
+    clave: 'securePassword123',
+    esActivo: 1
+  })
+});
+
+const data = await response.json();
+```
+
+```csharp C#
+var client = new HttpClient();
+var usuario = new UsuarioDTO
+{
+    NombreCompleto = "Carlos Martínez",
+    Correo = "carlos.martinez@example.com",
+    IdRol = 2,
+    Clave = "securePassword123",
+    EsActivo = 1
+};
+
+var json = JsonSerializer.Serialize(usuario);
+var content = new StringContent(json, Encoding.UTF8, "application/json");
+var response = await client.PostAsync("https://api.example.com/api/Usuario/Guardar", content);
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json Success
+{
+  "status": true,
+  "value": {
+    "idUsuario": 3,
+    "nombreCompleto": "Carlos Martínez",
+    "correo": "carlos.martinez@example.com",
+    "idRol": 2,
+    "rolDescripcion": "Empleado",
+    "clave": "hashed_password",
+    "esActivo": 1
+  },
+  "msg": null
+}
+```
+
+```json Error
+{
+  "status": false,
+  "value": null,
+  "msg": "Email already exists in the system"
+}
+```
+</CodeGroup>
+
+## Implementation Details
+
+- **Controller**: `UsuarioController.cs:67`
+- **Service Method**: `IUsuarioService.Crear(UsuarioDTO)`
+- **Request Source**: `[FromBody]`
+- **Response Type**: `Response<UsuarioDTO>`
+- **HTTP Status**: Always returns 200 OK (check `status` field for actual result)
+
+## Notes
+
+- The `idUsuario` field in the request body is ignored; the ID is auto-generated
+- Email addresses must be unique in the system
+- Passwords should be sent in plain text and will be hashed by the service layer
+- The `rolDescripcion` field is populated automatically based on the `idRol`

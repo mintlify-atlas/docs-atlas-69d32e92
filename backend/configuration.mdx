@@ -1,0 +1,324 @@
+---
+title: "Backend Configuration"
+description: "Configure the .NET 7 API with dependency injection, CORS, and service registration"
+---
+
+## Overview
+
+Sistema Venta uses a modular architecture with separate projects for API, Business Logic Layer (BLL), Data Access Layer (DAL), Models, DTOs, and IoC (Inversion of Control). This guide covers how to configure the backend services.
+
+## Project Structure
+
+The solution consists of 6 main projects:
+
+- **SistemaVenta.API** - ASP.NET Core Web API project
+- **SistemaVenta.BLL** - Business Logic Layer
+- **SistemaVenta.DAL** - Data Access Layer with Entity Framework
+- **SistemaVenta.Model** - Entity models
+- **SistemaVenta.DTO** - Data Transfer Objects
+- **SistemaVenta.IOC** - Dependency injection configuration
+- **SistemaVenta.Utility** - Utilities including AutoMapper profiles
+
+## Configuration Files
+
+### appsettings.json
+
+The main configuration file is located at `SistemaVenta.API/appsettings.json`:
+
+```json SistemaVenta.API/appsettings.json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=YOUR_SERVER;Database=DBVENTA;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+<Warning>
+Replace `YOUR_SERVER` with your actual SQL Server instance name. For local development, this is typically `localhost` or `.\\SQLEXPRESS`.
+</Warning>
+
+### appsettings.Development.json
+
+For development-specific settings, create an `appsettings.Development.json` file:
+
+```json
+{
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=localhost;Database=DBVENTA;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+## Program.cs Configuration
+
+### Service Registration
+
+The `Program.cs` file (`SistemaVenta.API/Program.cs:1`) configures all services and middleware:
+
+```csharp SistemaVenta.API/Program.cs
+using SistemaVenta.IOC;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Register all application dependencies
+builder.Services.InyectarDependencias(builder.Configuration);
+
+// Configure CORS policy
+builder.Services.AddCors(options => {
+    options.AddPolicy("NuevaPolitica", app => {
+        app.AllowAnyOrigin()
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseCors("NuevaPolitica");
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+```
+
+## Dependency Injection Setup
+
+### IoC Container Configuration
+
+All dependency injection is centralized in `SistemaVenta.IOC/Dependencia.cs:22`:
+
+```csharp SistemaVenta.IOC/Dependencia.cs
+public static class Dependencia
+{
+    public static void InyectarDependencias(this IServiceCollection services, IConfiguration configuration) 
+    {
+        // Register DbContext with SQL Server
+        services.AddDbContext<DbventaContext>(options => {
+            options.UseSqlServer(configuration.GetConnectionString("cadenaSQL"));
+        });
+
+        // Register Generic Repository pattern
+        services.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddScoped<IVentaRepository, VentaRepository>();
+
+        // Register AutoMapper
+        services.AddAutoMapper(typeof(AutoMapperProfile));
+
+        // Register Business Services
+        services.AddScoped<IRolService, RolService>();
+        services.AddScoped<IUsuarioService, UsuarioService>();
+        services.AddScoped<ICategoriaService, CategoriaService>();
+        services.AddScoped<IProductoService, ProductoService>();
+        services.AddScoped<IVentaService, VentaService>();
+        services.AddScoped<IDashBoardService, DashBoardService>();
+        services.AddScoped<IMenuService, MenuService>();
+    }
+}
+```
+
+<Steps>
+
+### Step 1: Database Context Registration
+
+The `DbventaContext` is registered with SQL Server provider using the connection string from configuration.
+
+### Step 2: Repository Pattern
+
+Generic repository is registered as transient, while specific repositories (like `VentaRepository`) are scoped.
+
+### Step 3: AutoMapper Registration
+
+AutoMapper is configured with the `AutoMapperProfile` class for DTO mappings.
+
+### Step 4: Business Services
+
+All business logic services are registered with scoped lifetime for request-based dependency injection.
+
+</Steps>
+
+## CORS Configuration
+
+### Policy Setup
+
+The API uses a permissive CORS policy named "NuevaPolitica" (`Program.cs:14`):
+
+```csharp
+builder.Services.AddCors(options => {
+    options.AddPolicy("NuevaPolitica", app => {
+        app.AllowAnyOrigin()
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+```
+
+<Warning>
+This CORS configuration allows all origins, headers, and methods. For production, restrict this to specific origins:
+
+```csharp
+app.WithOrigins("https://yourdomain.com")
+   .AllowAnyHeader()
+   .AllowAnyMethod();
+```
+</Warning>
+
+### Middleware Order
+
+CORS middleware is applied before authorization (`Program.cs:33`):
+
+```csharp
+app.UseCors("NuevaPolitica");
+app.UseAuthorization();
+```
+
+## AutoMapper Configuration
+
+### Profile Setup
+
+AutoMapper profiles are defined in `SistemaVenta.Utility/AutoMapperProfile.cs:14`:
+
+```csharp SistemaVenta.Utility/AutoMapperProfile.cs
+public class AutoMapperProfile : Profile
+{
+    public AutoMapperProfile()
+    {
+        // Rol mapping
+        CreateMap<Rol, RolDTO>().ReverseMap();
+        
+        // Menu mapping
+        CreateMap<Menu, MenuDTO>().ReverseMap();
+        
+        // Usuario mapping with custom logic
+        CreateMap<Usuario, UsuarioDTO>()
+            .ForMember(destino => destino.RolDescripcion,
+                opt => opt.MapFrom(origen => origen.IdRolNavigation.Nombre))
+            .ForMember(destino => destino.EsActivo,
+                opt => opt.MapFrom(origen => origen.EsActivo == true ? 1 : 0));
+        
+        // Additional mappings for Categoria, Producto, Venta, etc.
+    }
+}
+```
+
+<Note>
+AutoMapper handles conversions between entity models and DTOs, including:
+- Boolean to int conversions for `EsActivo` fields
+- Decimal to string with culture-specific formatting (es-PE)
+- Navigation property mappings for related entities
+</Note>
+
+## Environment Configuration
+
+### Development Environment
+
+Swagger UI is only enabled in development mode (`Program.cs:27`):
+
+```csharp
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+```
+
+Access Swagger at: `https://localhost:{port}/swagger`
+
+### Production Settings
+
+For production deployment:
+
+<Steps>
+
+### Step 1: Update Connection String
+
+Use environment variables or Azure Key Vault for sensitive data:
+
+```json
+{
+  "ConnectionStrings": {
+    "cadenaSQL": "${SQL_CONNECTION_STRING}"
+  }
+}
+```
+
+### Step 2: Restrict CORS
+
+Update CORS policy to allow only your frontend domain.
+
+### Step 3: Enable HTTPS
+
+Ensure HTTPS redirection is enabled:
+
+```csharp
+app.UseHttpsRedirection();
+```
+
+### Step 4: Configure Logging
+
+Set appropriate log levels for production:
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+```
+
+</Steps>
+
+## Required NuGet Packages
+
+### API Project
+
+```xml SistemaVenta.API.csproj
+<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.0" />
+<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+```
+
+### Model Project
+
+```xml
+<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.1" />
+<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.1" />
+```
+
+### Utility Project
+
+```xml
+<PackageReference Include="AutoMapper" Version="12.0.0" />
+<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Setup" icon="database" href="/backend/database">
+    Configure Entity Framework and run migrations
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/backend/deployment">
+    Deploy the API to production
+  </Card>
+</CardGroup>

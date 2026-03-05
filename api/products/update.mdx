@@ -1,0 +1,163 @@
+---
+title: 'Update Product'
+api: 'PUT /api/Producto/Editar'
+description: 'Update an existing product in the system'
+---
+
+## Endpoint
+
+```
+PUT /api/Producto/Editar
+```
+
+Updates an existing product with the provided information. All fields of the product can be modified.
+
+## Request Body
+
+<ParamField body="idProducto" type="integer" required>
+  ID of the product to update
+</ParamField>
+
+<ParamField body="nombre" type="string" required>
+  Updated product name
+</ParamField>
+
+<ParamField body="idCategoria" type="integer" required>
+  Updated category ID
+</ParamField>
+
+<ParamField body="stock" type="integer" required>
+  Updated stock quantity
+</ParamField>
+
+<ParamField body="precio" type="string" required>
+  Updated product price (formatted as string, e.g., "99.99")
+</ParamField>
+
+<ParamField body="esActivo" type="integer" required>
+  Updated active status (1 = active, 0 = inactive)
+</ParamField>
+
+<ParamField body="descripcionCategoria" type="string">
+  Read-only field, automatically updated from category
+</ParamField>
+
+## Response
+
+The response is wrapped in a `Response<T>` object containing a boolean success indicator.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates whether the request was processed successfully
+</ResponseField>
+
+<ResponseField name="value" type="boolean" required>
+  Indicates whether the product was actually updated
+  - `true` - Product was found and updated
+  - `false` - Product was not found or update failed
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message (only populated when status is false)
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X PUT "http://localhost:5000/api/Producto/Editar" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "idProducto": 15,
+    "nombre": "Monitor Samsung 27 4K",
+    "idCategoria": 1,
+    "stock": 30,
+    "precio": "399.99",
+    "esActivo": 1
+  }'
+```
+
+```javascript JavaScript
+fetch('http://localhost:5000/api/Producto/Editar', {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    idProducto: 15,
+    nombre: 'Monitor Samsung 27 4K',
+    idCategoria: 1,
+    stock: 30,
+    precio: '399.99',
+    esActivo: 1
+  })
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+```csharp C#
+using var client = new HttpClient();
+var producto = new ProductoDTO
+{
+    IdProducto = 15,
+    Nombre = "Monitor Samsung 27 4K",
+    IdCategoria = 1,
+    Stock = 30,
+    Precio = "399.99",
+    EsActivo = 1
+};
+var json = JsonSerializer.Serialize(producto);
+var content = new StringContent(json, Encoding.UTF8, "application/json");
+var response = await client.PutAsync("http://localhost:5000/api/Producto/Editar", content);
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "status": true,
+  "value": true,
+  "msg": null
+}
+```
+
+```json 200 - Product Not Found
+{
+  "status": true,
+  "value": false,
+  "msg": null
+}
+```
+
+```json 200 - Error
+{
+  "status": false,
+  "value": false,
+  "msg": "Invalid category ID"
+}
+```
+</CodeGroup>
+
+## Response Status
+
+This endpoint always returns HTTP 200. Check both the `status` and `value` fields:
+
+- `status: true, value: true` - Product updated successfully
+- `status: true, value: false` - Product not found (no update performed)
+- `status: false` - An error occurred (check `msg` field for details)
+
+## Validation
+
+- Product ID must reference an existing product
+- Product name must not be empty
+- Category ID must reference an existing category
+- Stock must be a non-negative integer
+- Price must be a valid decimal number formatted as a string
+
+## Notes
+
+- All fields are required in the request body
+- To deactivate a product, set `esActivo` to 0
+- Category changes are allowed and will update the `descripcionCategoria` automatically

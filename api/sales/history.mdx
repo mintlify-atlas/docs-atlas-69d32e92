@@ -1,0 +1,241 @@
+---
+title: 'Sales History'
+api: 'GET /api/Venta/Historial'
+description: 'Retrieve sales history filtered by sale number or date range'
+---
+
+## Query Parameters
+
+<ParamField query="buscarPor" type="string" required>
+  Search criteria type. Possible values:
+  - `"numero"` - Search by sale number
+  - `"fecha"` - Search by date range
+</ParamField>
+
+<ParamField query="numeroVenta" type="string">
+  Sale document number to search for. Required when `buscarPor` is `"numero"`.
+  
+  Example: `"0001-00000123"`
+</ParamField>
+
+<ParamField query="fechaInicio" type="string">
+  Start date for date range search. Required when `buscarPor` is `"fecha"`.
+  
+  Format: `dd/MM/yyyy` (e.g., `"01/03/2026"`)
+</ParamField>
+
+<ParamField query="fechaFin" type="string">
+  End date for date range search. Required when `buscarPor` is `"fecha"`.
+  
+  Format: `dd/MM/yyyy` (e.g., `"05/03/2026"`)
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="boolean">
+  Indicates whether the operation was successful
+</ResponseField>
+
+<ResponseField name="value" type="array">
+  Array of sale objects matching the search criteria
+  
+  <Expandable title="VentaDTO properties">
+    <ResponseField name="IdVenta" type="integer">
+      Sale identifier
+    </ResponseField>
+    
+    <ResponseField name="NumeroDocumento" type="string">
+      Document number for the sale
+    </ResponseField>
+    
+    <ResponseField name="TipoPago" type="string">
+      Payment type
+    </ResponseField>
+    
+    <ResponseField name="TotalTexto" type="string">
+      Total amount as text
+    </ResponseField>
+    
+    <ResponseField name="FechaRegistro" type="string">
+      Registration date and time
+    </ResponseField>
+    
+    <ResponseField name="DetalleVenta" type="array">
+      Array of sale detail items
+      
+      <Expandable title="DetalleVentaDTO properties">
+        <ResponseField name="IdProducto" type="integer">
+          Product identifier
+        </ResponseField>
+        
+        <ResponseField name="DescripcionProducto" type="string">
+          Product description or name
+        </ResponseField>
+        
+        <ResponseField name="Cantidad" type="integer">
+          Quantity sold
+        </ResponseField>
+        
+        <ResponseField name="PrecioTexto" type="string">
+          Unit price as text
+        </ResponseField>
+        
+        <ResponseField name="TotalTexto" type="string">
+          Line total as text
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Requests
+
+<CodeGroup>
+
+```bash Search by Number
+curl "http://localhost:5000/api/Venta/Historial?buscarPor=numero&numeroVenta=0001-00000123"
+```
+
+```bash Search by Date Range
+curl "http://localhost:5000/api/Venta/Historial?buscarPor=fecha&fechaInicio=01/03/2026&fechaFin=05/03/2026"
+```
+
+```javascript Search by Number
+const params = new URLSearchParams({
+  buscarPor: 'numero',
+  numeroVenta: '0001-00000123'
+});
+
+const response = await fetch(`http://localhost:5000/api/Venta/Historial?${params}`);
+const data = await response.json();
+```
+
+```javascript Search by Date Range
+const params = new URLSearchParams({
+  buscarPor: 'fecha',
+  fechaInicio: '01/03/2026',
+  fechaFin: '05/03/2026'
+});
+
+const response = await fetch(`http://localhost:5000/api/Venta/Historial?${params}`);
+const data = await response.json();
+```
+
+```python Search by Number
+import requests
+
+url = 'http://localhost:5000/api/Venta/Historial'
+params = {
+    'buscarPor': 'numero',
+    'numeroVenta': '0001-00000123'
+}
+
+response = requests.get(url, params=params)
+result = response.json()
+```
+
+```python Search by Date Range
+import requests
+
+url = 'http://localhost:5000/api/Venta/Historial'
+params = {
+    'buscarPor': 'fecha',
+    'fechaInicio': '01/03/2026',
+    'fechaFin': '05/03/2026'
+}
+
+response = requests.get(url, params=params)
+result = response.json()
+```
+
+```csharp Search by Number
+using System.Net.Http;
+
+var client = new HttpClient();
+var response = await client.GetAsync(
+    "http://localhost:5000/api/Venta/Historial?buscarPor=numero&numeroVenta=0001-00000123"
+);
+var result = await response.Content.ReadAsStringAsync();
+```
+
+```csharp Search by Date Range
+using System.Net.Http;
+
+var client = new HttpClient();
+var response = await client.GetAsync(
+    "http://localhost:5000/api/Venta/Historial?buscarPor=fecha&fechaInicio=01/03/2026&fechaFin=05/03/2026"
+);
+var result = await response.Content.ReadAsStringAsync();
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json Success Response
+{
+  "status": true,
+  "value": [
+    {
+      "IdVenta": 42,
+      "NumeroDocumento": "0001-00000123",
+      "TipoPago": "Efectivo",
+      "TotalTexto": "150.00",
+      "FechaRegistro": "05/03/2026 10:30:45 AM",
+      "DetalleVenta": [
+        {
+          "IdProducto": 5,
+          "DescripcionProducto": "Laptop HP 15",
+          "Cantidad": 1,
+          "PrecioTexto": "120.00",
+          "TotalTexto": "120.00"
+        },
+        {
+          "IdProducto": 8,
+          "DescripcionProducto": "Mouse Inalámbrico",
+          "Cantidad": 2,
+          "PrecioTexto": "15.00",
+          "TotalTexto": "30.00"
+        }
+      ]
+    },
+    {
+      "IdVenta": 45,
+      "NumeroDocumento": "0001-00000126",
+      "TipoPago": "Tarjeta",
+      "TotalTexto": "89.50",
+      "FechaRegistro": "05/03/2026 02:15:30 PM",
+      "DetalleVenta": [
+        {
+          "IdProducto": 12,
+          "DescripcionProducto": "Teclado Mecánico",
+          "Cantidad": 1,
+          "PrecioTexto": "89.50",
+          "TotalTexto": "89.50"
+        }
+      ]
+    }
+  ],
+  "msg": null
+}
+```
+
+```json Empty Result
+{
+  "status": true,
+  "value": [],
+  "msg": null
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "value": null,
+  "msg": "Error al obtener el historial de ventas"
+}
+```

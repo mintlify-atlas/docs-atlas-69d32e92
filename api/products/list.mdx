@@ -1,0 +1,140 @@
+---
+title: 'List Products'
+api: 'GET /api/Producto/Lista'
+description: 'Retrieve a list of all products in the system'
+---
+
+## Endpoint
+
+```
+GET /api/Producto/Lista
+```
+
+Retrieves all products with their associated category information, stock levels, and pricing.
+
+## Response
+
+The response is wrapped in a `Response<T>` object that includes status information.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="value" type="array" required>
+  Array of product objects
+  
+  <Expandable title="ProductoDTO properties">
+    <ResponseField name="idProducto" type="integer">
+      Unique identifier for the product
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Product name
+    </ResponseField>
+    
+    <ResponseField name="idCategoria" type="integer">
+      ID of the category this product belongs to
+    </ResponseField>
+    
+    <ResponseField name="descripcionCategoria" type="string">
+      Category name/description
+    </ResponseField>
+    
+    <ResponseField name="stock" type="integer">
+      Current stock quantity
+    </ResponseField>
+    
+    <ResponseField name="precio" type="string">
+      Product price (stored as string)
+    </ResponseField>
+    
+    <ResponseField name="esActivo" type="integer">
+      Active status (1 = active, 0 = inactive)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message (only populated when status is false)
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "http://localhost:5000/api/Producto/Lista" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+fetch('http://localhost:5000/api/Producto/Lista', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+```csharp C#
+using var client = new HttpClient();
+var response = await client.GetAsync("http://localhost:5000/api/Producto/Lista");
+var content = await response.Content.ReadAsStringAsync();
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "status": true,
+  "value": [
+    {
+      "idProducto": 1,
+      "nombre": "Laptop HP Pavilion",
+      "idCategoria": 1,
+      "descripcionCategoria": "Electrónica",
+      "stock": 15,
+      "precio": "899.99",
+      "esActivo": 1
+    },
+    {
+      "idProducto": 2,
+      "nombre": "Mouse Logitech MX Master",
+      "idCategoria": 2,
+      "descripcionCategoria": "Accesorios",
+      "stock": 50,
+      "precio": "99.99",
+      "esActivo": 1
+    },
+    {
+      "idProducto": 3,
+      "nombre": "Teclado Mecánico Corsair",
+      "idCategoria": 2,
+      "descripcionCategoria": "Accesorios",
+      "stock": 0,
+      "precio": "149.99",
+      "esActivo": 0
+    }
+  ],
+  "msg": null
+}
+```
+
+```json 200 - Error
+{
+  "status": false,
+  "value": null,
+  "msg": "Database connection error"
+}
+```
+</CodeGroup>
+
+## Response Status
+
+This endpoint always returns HTTP 200. Check the `status` field in the response body to determine success or failure.
+
+- `status: true` - Products retrieved successfully
+- `status: false` - An error occurred (check `msg` field for details)

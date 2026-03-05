@@ -1,0 +1,130 @@
+---
+title: 'Authentication'
+description: 'Learn how to log in and manage your session in Sistema Venta'
+icon: 'lock'
+---
+
+## Overview
+
+Sistema Venta uses a secure email and password authentication system to protect your business data. The authentication system validates user credentials against the backend API and maintains user sessions throughout your workflow.
+
+## Logging In
+
+<Steps>
+  <Step title="Access the Login Page">
+    Navigate to the Sistema Venta login page. You'll see a clean login form with email and password fields.
+  </Step>
+  
+  <Step title="Enter Your Credentials">
+    - Enter your registered email address in the **Email** field
+    - Enter your password in the **Contraseña** (Password) field
+    - Toggle password visibility using the eye icon to verify your entry
+  </Step>
+  
+  <Step title="Submit and Access">
+    Click the **Ingresar** (Login) button to authenticate. The system will:
+    - Validate your credentials against the database
+    - Create a user session
+    - Redirect you to the dashboard on successful login
+  </Step>
+</Steps>
+
+## Login Interface
+
+The login page (`login.component.html`) features:
+
+- **Email Field**: Material Design input with mail icon
+- **Password Field**: Secure input with visibility toggle
+- **Login Button**: Disabled until both fields are filled (form validation)
+- **Loading Indicator**: Progress bar appears during authentication
+
+<Note>
+The login form uses Angular reactive forms with built-in validation. The login button remains disabled until both email and password are provided.
+</Note>
+
+## Authentication Flow
+
+The authentication process works as follows:
+
+1. **User Input**: Form captures email and password (`login.component.ts:40-43`)
+2. **API Call**: `UsuarioService.iniciarSesion()` sends credentials to `/Usuario/IniciarSesion` endpoint
+3. **Session Creation**: On success, user data is stored in session via `UtilidadService.guardarSesionUsuario()`
+4. **Navigation**: User is redirected to `/pages` (main application)
+
+```typescript
+// Authentication API endpoint
+POST /Usuario/IniciarSesion
+{
+  "correo": "user@example.com",
+  "clave": "password"
+}
+```
+
+## Error Handling
+
+Sistema Venta provides clear feedback for authentication issues:
+
+<CardGroup cols={2}>
+  <Card title="Invalid Credentials" icon="circle-xmark">
+    Message: "No se encontraron coincidencias" (No matches found)
+    
+    This appears when email/password combination doesn't exist in the database.
+  </Card>
+  
+  <Card title="Connection Error" icon="wifi">
+    Message: "Hubo un error" (There was an error)
+    
+    This appears when the API server is unreachable or returns an error.
+  </Card>
+</CardGroup>
+
+## Session Management
+
+Once authenticated, your session data includes:
+
+- User ID and full name
+- Email address
+- Role ID and role description
+- Active status
+
+This session data determines:
+- Which menu items you can access
+- What actions you can perform
+- Your permissions throughout the system
+
+<Note>
+Session data is managed by `UtilidadService` and persists as long as you remain logged in. The system uses this data for authorization checks throughout the application.
+</Note>
+
+## Security Features
+
+Sistema Venta implements several security measures:
+
+- **Password Masking**: Passwords are hidden by default with optional visibility toggle
+- **Form Validation**: Client-side validation prevents empty submissions
+- **Secure Transport**: All authentication requests use HTTP POST
+- **Session Storage**: User credentials are stored securely after authentication
+
+## Related Components
+
+- **Component**: `login.component.ts` - Handles login logic and form management
+- **Service**: `usuario.service.ts:19-21` - Manages authentication API calls
+- **Utility**: `utilidad.service.ts` - Handles session storage and alerts
+
+## Troubleshooting
+
+<Accordion title="Login button is disabled">
+  Ensure both email and password fields are filled out. The form uses validators that require both fields to have values before enabling submission.
+</Accordion>
+
+<Accordion title="Can't see password characters">
+  Click the eye icon on the right side of the password field to toggle between hidden and visible password display.
+</Accordion>
+
+<Accordion title="Login keeps failing with valid credentials">
+  Check that:
+  - Your account status is active (esActivo = 1)
+  - You're using the correct email format
+  - The API server is running and accessible
+  - There are no network connectivity issues
+</Accordion>

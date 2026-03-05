@@ -1,0 +1,213 @@
+---
+title: 'Sales Report'
+api: 'GET /api/Venta/Reporte'
+description: 'Generate a detailed sales report for a specific date range'
+---
+
+## Query Parameters
+
+<ParamField query="fechaInicio" type="string">
+  Start date for the report period.
+  
+  Format: `dd/MM/yyyy` (e.g., `"01/03/2026"`)
+  
+  If not provided, returns all sales up to `fechaFin`.
+</ParamField>
+
+<ParamField query="fechaFin" type="string">
+  End date for the report period.
+  
+  Format: `dd/MM/yyyy` (e.g., `"05/03/2026"`)
+  
+  If not provided, returns all sales from `fechaInicio` onwards.
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="boolean">
+  Indicates whether the operation was successful
+</ResponseField>
+
+<ResponseField name="value" type="array">
+  Array of detailed report records. Each record represents a line item from sales in the date range.
+  
+  <Expandable title="ReporteDTO properties">
+    <ResponseField name="NumeroDocumento" type="string">
+      Sale document number
+    </ResponseField>
+    
+    <ResponseField name="TipoPago" type="string">
+      Payment type for the sale
+    </ResponseField>
+    
+    <ResponseField name="FechaRegistro" type="string">
+      Sale registration date and time
+    </ResponseField>
+    
+    <ResponseField name="TotalVenta" type="string">
+      Total amount of the sale
+    </ResponseField>
+    
+    <ResponseField name="Producto" type="string">
+      Product name or description
+    </ResponseField>
+    
+    <ResponseField name="Cantidad" type="integer">
+      Quantity of the product sold
+    </ResponseField>
+    
+    <ResponseField name="Precio" type="string">
+      Unit price of the product
+    </ResponseField>
+    
+    <ResponseField name="Total" type="string">
+      Line total (quantity × price)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Requests
+
+<CodeGroup>
+
+```bash Date Range Report
+curl "http://localhost:5000/api/Venta/Reporte?fechaInicio=01/03/2026&fechaFin=05/03/2026"
+```
+
+```bash All Sales Report
+curl "http://localhost:5000/api/Venta/Reporte"
+```
+
+```javascript Date Range Report
+const params = new URLSearchParams({
+  fechaInicio: '01/03/2026',
+  fechaFin: '05/03/2026'
+});
+
+const response = await fetch(`http://localhost:5000/api/Venta/Reporte?${params}`);
+const data = await response.json();
+```
+
+```javascript All Sales Report
+const response = await fetch('http://localhost:5000/api/Venta/Reporte');
+const data = await response.json();
+```
+
+```python Date Range Report
+import requests
+
+url = 'http://localhost:5000/api/Venta/Reporte'
+params = {
+    'fechaInicio': '01/03/2026',
+    'fechaFin': '05/03/2026'
+}
+
+response = requests.get(url, params=params)
+result = response.json()
+```
+
+```python All Sales Report
+import requests
+
+url = 'http://localhost:5000/api/Venta/Reporte'
+response = requests.get(url)
+result = response.json()
+```
+
+```csharp Date Range Report
+using System.Net.Http;
+
+var client = new HttpClient();
+var response = await client.GetAsync(
+    "http://localhost:5000/api/Venta/Reporte?fechaInicio=01/03/2026&fechaFin=05/03/2026"
+);
+var result = await response.Content.ReadAsStringAsync();
+```
+
+```csharp All Sales Report
+using System.Net.Http;
+
+var client = new HttpClient();
+var response = await client.GetAsync("http://localhost:5000/api/Venta/Reporte");
+var result = await response.Content.ReadAsStringAsync();
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json Success Response
+{
+  "status": true,
+  "value": [
+    {
+      "NumeroDocumento": "0001-00000123",
+      "TipoPago": "Efectivo",
+      "FechaRegistro": "05/03/2026 10:30:45 AM",
+      "TotalVenta": "150.00",
+      "Producto": "Laptop HP 15",
+      "Cantidad": 1,
+      "Precio": "120.00",
+      "Total": "120.00"
+    },
+    {
+      "NumeroDocumento": "0001-00000123",
+      "TipoPago": "Efectivo",
+      "FechaRegistro": "05/03/2026 10:30:45 AM",
+      "TotalVenta": "150.00",
+      "Producto": "Mouse Inalámbrico",
+      "Cantidad": 2,
+      "Precio": "15.00",
+      "Total": "30.00"
+    },
+    {
+      "NumeroDocumento": "0001-00000126",
+      "TipoPago": "Tarjeta",
+      "FechaRegistro": "05/03/2026 02:15:30 PM",
+      "TotalVenta": "89.50",
+      "Producto": "Teclado Mecánico",
+      "Cantidad": 1,
+      "Precio": "89.50",
+      "Total": "89.50"
+    },
+    {
+      "NumeroDocumento": "0001-00000127",
+      "TipoPago": "Transferencia",
+      "FechaRegistro": "05/03/2026 04:45:15 PM",
+      "TotalVenta": "245.00",
+      "Producto": "Monitor 24 pulgadas",
+      "Cantidad": 1,
+      "Precio": "245.00",
+      "Total": "245.00"
+    }
+  ],
+  "msg": null
+}
+```
+
+```json Empty Report
+{
+  "status": true,
+  "value": [],
+  "msg": null
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "value": null,
+  "msg": "Error al generar el reporte de ventas"
+}
+```
+
+## Notes
+
+- The report returns one row per product line item, not per sale
+- Each row includes both the line item details and the parent sale information
+- This format is ideal for generating detailed sales analysis and product performance reports
+- Use for export to Excel, generating charts, or analytical dashboards

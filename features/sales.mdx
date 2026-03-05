@@ -1,0 +1,397 @@
+---
+title: 'Sales & Point of Sale'
+description: 'Process transactions, manage sales, and view sales history in your POS system'
+icon: 'cash-register'
+---
+
+## Overview
+
+The Sales module is your point-of-sale (POS) interface for processing customer transactions. It provides a streamlined workflow for adding products, selecting payment methods, and completing sales with automatic inventory updates.
+
+## Accessing the Sales Interface
+
+Navigate to **Venta** (Sales) or **Nueva Venta** (New Sale) from the main menu to access the POS interface.
+
+## Sales Interface Layout
+
+The sales screen is organized into functional sections:
+
+<CardGroup cols={2}>
+  <Card title="Product Selection" icon="magnifying-glass">
+    **Top Section**
+    
+    - Autocomplete product search
+    - Quantity input
+    - Add button
+  </Card>
+  
+  <Card title="Payment Options" icon="credit-card">
+    **Right Section**
+    
+    - Payment method selector (Efectivo/Tarjeta)
+    - Running total display
+  </Card>
+  
+  <Card title="Cart/Order List" icon="cart-shopping">
+    **Middle Section**
+    
+    - Products added to sale
+    - Quantities and line totals
+    - Remove items option
+  </Card>
+  
+  <Card title="Complete Sale" icon="check">
+    **Bottom Section**
+    
+    - Register sale button
+    - Enabled only when cart has items
+  </Card>
+</CardGroup>
+
+## Processing a Sale
+
+<Steps>
+  <Step title="Search for Product">
+    Start typing in the **Producto** (Product) field. The autocomplete feature displays matching products as you type.
+    
+    - Only **active** products with **stock > 0** appear in results
+    - Search by product name
+    - Dropdown shows available products (`venta.component.ts:37-41`)
+  </Step>
+  
+  <Step title="Select Product and Quantity">
+    - Click on a product from the autocomplete dropdown
+    - Enter the desired **Cantidad** (Quantity) in the quantity field
+    - Click the **Agregar** (Add) button
+    
+    The product is added to the sale with calculated line total.
+  </Step>
+  
+  <Step title="Review Cart">
+    The table displays all products in the current sale:
+    
+    | Column | Description |
+    |--------|-------------|
+    | **Producto** | Product name |
+    | **Cantidad** | Quantity ordered |
+    | **Precio** | Unit price |
+    | **Total** | Line total (quantity × price) |
+    | **Acción** | Remove item button |
+    
+    The **Total** display updates automatically with each addition.
+  </Step>
+  
+  <Step title="Select Payment Method">
+    Choose the payment type from the dropdown:
+    - **Efectivo** (Cash) - Default option
+    - **Tarjeta** (Card)
+    
+    This is recorded with the sale for reporting purposes.
+  </Step>
+  
+  <Step title="Complete the Sale">
+    Click the **Registrar** (Register) button to finalize the sale. The system:
+    - Validates the cart has at least one product
+    - Sends sale data to `/Venta/Registrar`
+    - Reduces stock for each product automatically
+    - Generates a sale number (numeroDocumento)
+    - Displays success message with sale number
+    - Clears the cart for the next transaction
+  </Step>
+</Steps>
+
+## Product Autocomplete
+
+The product search uses intelligent autocomplete to speed up the checkout process:
+
+### How It Works
+- Start typing a product name (case-insensitive)
+- Dropdown shows matching products in real-time
+- Only displays products that are:
+  - Active (`esActivo == 1`)
+  - In stock (`stock > 0`)
+- Results update as you continue typing
+
+### Selecting a Product
+- Click on a product from the dropdown list
+- Product details are captured automatically
+- Price is retrieved from the product record
+- Focus moves to quantity field
+
+<Tip>
+You can type just part of a product name. For example, typing "lap" will show all products with "lap" in the name like "Laptop", "Lapton Dell", etc.
+</Tip>
+
+## Managing the Cart
+
+### Adding Multiple Products
+- Add products one at a time using the search and add workflow
+- Each product appears as a new line in the cart table
+- Can add the same product multiple times with different quantities
+
+### Calculating Totals
+The system automatically calculates:
+- **Line Total**: `quantity × unit price` (`venta.component.ts:88-90`)
+- **Sale Total**: Sum of all line totals
+- Totals display with 2 decimal places
+- Running total updates in real-time
+
+### Removing Products
+To remove a product from the cart:
+1. Click the red **delete** (trash) icon in the Actions column
+2. Product is removed immediately
+3. Total is recalculated automatically (`venta.component.ts:112-117`)
+
+<Note>
+Removing a product only removes it from the current cart. It doesn't affect inventory or past sales.
+</Note>
+
+## Payment Methods
+
+Sistema Venta supports two payment types:
+
+<CardGroup cols={2}>
+  <Card title="Efectivo (Cash)" icon="money-bill">
+    **Default Payment Method**
+    
+    - Selected by default for each new sale
+    - Used for cash transactions
+    - Recorded in sales history and reports
+  </Card>
+  
+  <Card title="Tarjeta (Card)" icon="credit-card">
+    **Card Payments**
+    
+    - Credit/debit card transactions
+    - Select from dropdown before registering sale
+    - Tracked separately in reports
+  </Card>
+</CardGroup>
+
+The payment method is purely for record-keeping. Sistema Venta doesn't process actual payments or integrate with payment processors.
+
+<Tip>
+Change the payment method using the **Tipo de pago** dropdown before clicking Register. The selection persists for the current sale only.
+</Tip>
+
+## Sale Registration
+
+When you click **Registrar**, the system processes the sale:
+
+### Sale Data Structure
+```typescript
+{
+  "tipoPago": "Efectivo",           // Payment method
+  "totalTexto": "2599.98",          // Total amount as string
+  "detalleVenta": [                 // Array of line items
+    {
+      "idProducto": 5,
+      "descripcionProducto": "Laptop Dell Inspiron 15",
+      "cantidad": 2,
+      "precioTexto": "1299.99",
+      "totalTexto": "2599.98"
+    }
+  ]
+}
+```
+
+### Backend Processing
+The API endpoint `/Venta/Registrar` handles:
+- Creating the sale record
+- Generating unique sale number (numeroDocumento)
+- Recording all line items (detalleVenta)
+- **Reducing product stock** automatically
+- Timestamping the transaction
+
+### Success Response
+On successful registration:
+- Success alert appears with sale number
+- Message: "Venta Registrada!" (Sale Registered!)
+- Shows: `Numero de venta: {numeroDocumento}`
+- Cart clears automatically
+- Ready for next transaction
+
+<Note>
+The sale number (numeroDocumento) is generated by the backend and can be used to look up the sale in the sales history.
+</Note>
+
+## Inventory Updates
+
+Stock levels update automatically when sales are completed:
+
+- Each product quantity is **deducted** from current stock
+- Updates happen during sale registration
+- No manual stock adjustment needed
+- If a product reaches 0 stock, it disappears from future sales autocomplete
+
+<Warning>
+If stock is insufficient for a sale, the API may reject the transaction. Always ensure products have adequate stock before processing large orders.
+</Warning>
+
+## Form Validation
+
+The sales interface uses validation to prevent errors:
+
+| Validation | Behavior |
+|-----------|----------|
+| **Product Selection** | Must select from autocomplete (typing only isn't enough) |
+| **Quantity Required** | Must enter a quantity before adding |
+| **Empty Cart** | Register button disabled if cart is empty |
+| **During Registration** | Register button disabled while processing to prevent double-submission |
+
+These validations ensure data integrity and prevent incomplete transactions.
+
+## Sales History
+
+After completing a sale, you can view it in the **Historial Venta** (Sales History) section.
+
+### Accessing Sales History
+Navigate to **Historial Venta** from the main menu to view all past transactions.
+
+### Search Options
+Find specific sales using two search methods:
+
+<Tabs>
+  <Tab title="Search by Date">
+    **Por fechas** (By dates)
+    
+    1. Select search type: "Por fechas"
+    2. Choose **Fecha Inicio** (Start date) 
+    3. Choose **Fecha Fin** (End date)
+    4. Click **Buscar** (Search)
+    
+    Returns all sales within the date range.
+  </Tab>
+  
+  <Tab title="Search by Sale Number">
+    **Numero venta** (Sale number)
+    
+    1. Select search type: "Numero venta"
+    2. Enter the sale number (numeroDocumento)
+    3. Click **Buscar** (Search)
+    
+    Returns the specific sale matching that number.
+  </Tab>
+</Tabs>
+
+### Sales History Table
+
+The history displays:
+- **Fecha Registro**: Registration date/time
+- **Numero Documento**: Unique sale number
+- **Tipo Pago**: Payment method (Efectivo/Tarjeta)
+- **Total**: Total sale amount
+- **Acción**: View details button
+
+### Viewing Sale Details
+Click the view icon on any sale to open a detailed modal showing:
+- Complete product list
+- Quantities and prices for each item
+- Line totals
+- Overall sale total
+- Payment method
+- Sale date and number
+
+This detail view is handled by `modal-detalle-venta.component.ts`.
+
+## API Endpoints
+
+The Sales module uses these API endpoints:
+
+```typescript
+// Register a new sale
+POST /Venta/Registrar
+{
+  "tipoPago": "Efectivo",
+  "totalTexto": "2599.98",
+  "detalleVenta": [...]
+}
+
+// Get sales history
+GET /Venta/Historial?buscarPor={fecha|numero}&numeroVenta={number}&fechaInicio={DD/MM/YYYY}&fechaFin={DD/MM/YYYY}
+
+// Get products for sale (with stock filter)
+GET /Producto/Lista
+// Frontend filters to: esActivo == 1 && stock > 0
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Verify Product" icon="magnifying-glass-check">
+    Always confirm the correct product is selected before entering quantity.
+  </Card>
+  
+  <Card title="Check Total" icon="calculator">
+    Review the total amount before registering to catch entry errors.
+  </Card>
+  
+  <Card title="Save Sale Number" icon="bookmark">
+    Note or print the sale number (numeroDocumento) for customer reference and future lookups.
+  </Card>
+  
+  <Card title="Clear Cart After" icon="broom">
+    The system clears automatically, but verify before starting a new sale to avoid mixing orders.
+  </Card>
+</CardGroup>
+
+## Keyboard Workflow
+
+For faster checkout, use this keyboard-optimized flow:
+1. **Tab** or click into Product field
+2. Type product name, arrow keys to select, **Enter**
+3. **Tab** to Quantity field
+4. Enter quantity, **Enter** to add
+5. Repeat for additional products
+6. Select payment method if not cash
+7. Click or **Tab** to Register button
+
+## Related Components
+
+- **Component**: `venta.component.ts` - Main sales processing logic
+- **Template**: `venta.component.html` - POS interface layout
+- **Service**: `venta.service.ts:18-20` - Sale registration API
+- **Service**: `producto.service.ts` - Product list for autocomplete
+- **History**: `historial-venta.component.ts` - Sales history viewer
+- **Detail Modal**: `modal-detalle-venta.component.ts` - Sale detail view
+
+## Troubleshooting
+
+<Accordion title="Product doesn't appear in autocomplete">
+  Check that the product:
+  - Is set to Active status (esActivo = 1)
+  - Has stock greater than 0
+  - Exists in the database
+  - Name matches what you're typing
+  
+  The system filters products: `lista.filter(p => p.esActivo == 1 && p.stock > 0)`
+</Accordion>
+
+<Accordion title="Can't add product - button stays disabled">
+  Ensure both fields are filled:
+  - Product must be selected from the autocomplete dropdown (clicking on it, not just typing)
+  - Quantity must be a valid positive number
+</Accordion>
+
+<Accordion title="Register button is disabled">
+  Two possible reasons:
+  - Cart is empty (add at least one product)
+  - Sale is already processing (button disables during registration to prevent duplicates)
+</Accordion>
+
+<Accordion title="Sale registered but stock didn't decrease">
+  This is handled by the backend during registration. If stock isn't updating:
+  - Check the API server logs
+  - Verify the `/Venta/Registrar` endpoint includes stock reduction logic
+  - Confirm the sale was actually registered (check sales history)
+</Accordion>
+
+<Accordion title="Total seems wrong">
+  The total calculates as: `sum of (quantity × price) for all items`
+  
+  Verify:
+  - Product prices are correct in product management
+  - Quantities entered are accurate
+  - All line item totals are correct
+  - Check for decimal/formatting issues in price data
+</Accordion>

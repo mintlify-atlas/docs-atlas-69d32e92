@@ -1,0 +1,244 @@
+---
+title: 'User Management'
+description: 'Create, edit, and manage user accounts with role-based permissions'
+icon: 'users'
+---
+
+## Overview
+
+The User Management module allows administrators to control who has access to Sistema Venta. You can create new user accounts, assign roles, update user information, and deactivate accounts as needed.
+
+## Accessing User Management
+
+Navigate to the **Usuarios** (Users) section from the main menu. You'll see a table displaying all users with their details.
+
+## User List View
+
+The user table displays the following information:
+
+<CardGroup cols={2}>
+  <Card title="User Information" icon="id-card">
+    - **Nombre Completo**: Full name
+    - **Correo**: Email address
+    - **Rol**: Assigned role (e.g., Administrador, Empleado)
+  </Card>
+  
+  <Card title="User Status" icon="toggle-on">
+    - **Estado**: Active or Inactive
+    - **Acciones**: Edit and delete buttons
+  </Card>
+</CardGroup>
+
+### Search and Filter
+
+Use the search bar at the top of the user table to quickly find users by:
+- Name
+- Email address
+- Role
+- Status
+
+The table automatically filters as you type (`usuario.component.ts:53-56`).
+
+### Pagination
+
+The user list supports pagination with configurable page sizes:
+- 5 users per page
+- 10 users per page  
+- 20 users per page
+
+Use the pagination controls at the bottom of the table to navigate through multiple pages.
+
+## Creating a New User
+
+<Steps>
+  <Step title="Open User Form">
+    Click the **Nuevo Usuario** (New User) button at the top of the page. This opens a modal dialog with the user creation form.
+  </Step>
+  
+  <Step title="Fill User Details">
+    Enter the required information:
+    - **Nombre Completo**: User's full name
+    - **Correo**: Valid email address (used for login)
+    - **Rol**: Select from available roles (dropdown populated from database)
+    - **Clave**: Password for the user account
+    - **Estado**: Active (1) or Inactive (0)
+  </Step>
+  
+  <Step title="Save User">
+    Click **Guardar** (Save) to create the user. The system will:
+    - Validate all required fields
+    - Send a POST request to `/Usuario/Guardar`
+    - Display success/error message
+    - Refresh the user list automatically
+  </Step>
+</Steps>
+
+<Note>
+All fields are required. The save button remains disabled until the form is completely filled out with valid data.
+</Note>
+
+## Editing a User
+
+<Steps>
+  <Step title="Select User to Edit">
+    Click the blue **edit** (pencil) icon next to the user you want to modify.
+  </Step>
+  
+  <Step title="Modify User Information">
+    The user form opens pre-filled with existing data. You can update:
+    - Full name
+    - Email address
+    - Assigned role
+    - Password
+    - Active status
+  </Step>
+  
+  <Step title="Update User">
+    Click **Actualizar** (Update) to save changes. The system sends a PUT request to `/Usuario/Editar` and refreshes the list.
+  </Step>
+</Steps>
+
+## Deleting a User
+
+<Warning>
+Deleting a user is permanent and cannot be undone. Consider deactivating the user instead by setting their status to "No activo".
+</Warning>
+
+<Steps>
+  <Step title="Initiate Delete">
+    Click the red **delete** (trash) icon next to the user you want to remove.
+  </Step>
+  
+  <Step title="Confirm Deletion">
+    A confirmation dialog appears showing:
+    - Title: "¿Desea eliminar el usuario?" (Do you want to delete the user?)
+    - User's full name
+    - **Si, eliminar** (Yes, delete) button
+    - **No, volver** (No, go back) button
+  </Step>
+  
+  <Step title="Complete Deletion">
+    Click **Si, eliminar** to permanently remove the user. The system:
+    - Sends a DELETE request to `/Usuario/Eliminar/{id}`
+    - Shows success message "El usuario fue eliminado"
+    - Refreshes the user list
+  </Step>
+</Steps>
+
+## User Roles
+
+Sistema Venta supports role-based access control. When creating or editing a user, you assign them a role that determines their permissions:
+
+- **Administrador**: Full system access
+- **Empleado**: Limited access based on role configuration
+- **Custom Roles**: As configured in your system
+
+Roles are fetched from the `Rol` service and displayed in a dropdown menu (`modal-usuario.component.ts:48-53`).
+
+## User Status Management
+
+Each user has an active status that controls access:
+
+<CardGroup cols={2}>
+  <Card title="Active (Activo)" icon="circle-check">
+    Status = 1
+    
+    User can log in and access the system according to their role permissions.
+  </Card>
+  
+  <Card title="Inactive (No activo)" icon="circle-xmark">
+    Status = 0
+    
+    User account is disabled. Login attempts will fail even with correct credentials.
+  </Card>
+</CardGroup>
+
+<Tip>
+Use inactive status instead of deletion to temporarily disable access while preserving user history and audit trails.
+</Tip>
+
+## API Endpoints
+
+The User Management module interacts with these API endpoints:
+
+```typescript
+// Get all users
+GET /Usuario/Lista
+
+// Create new user
+POST /Usuario/Guardar
+{
+  "nombreCompleto": "John Doe",
+  "correo": "john@example.com",
+  "idRol": 1,
+  "clave": "password123",
+  "esActivo": 1
+}
+
+// Update user
+PUT /Usuario/Editar
+{
+  "idUsuario": 5,
+  "nombreCompleto": "John Doe",
+  "correo": "john@example.com",
+  "idRol": 1,
+  "clave": "newpassword",
+  "esActivo": 1
+}
+
+// Delete user
+DELETE /Usuario/Eliminar/{id}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Email Uniqueness" icon="envelope">
+    Ensure each user has a unique email address. The email is used as the login identifier.
+  </Card>
+  
+  <Card title="Strong Passwords" icon="key">
+    Encourage users to create strong passwords with a mix of characters, numbers, and symbols.
+  </Card>
+  
+  <Card title="Role Assignment" icon="user-shield">
+    Carefully assign roles based on job responsibilities. Review permissions regularly.
+  </Card>
+  
+  <Card title="Regular Audits" icon="list-check">
+    Periodically review the user list to deactivate accounts of employees who no longer need access.
+  </Card>
+</CardGroup>
+
+## Related Components
+
+- **Component**: `usuario.component.ts` - Main user list and management logic
+- **Modal**: `modal-usuario.component.ts` - User creation/editing form
+- **Service**: `usuario.service.ts` - API integration for user operations
+- **Interface**: `usuario.ts` - User data structure
+
+## Troubleshooting
+
+<Accordion title="Can't create user - save button disabled">
+  Check that all required fields are filled:
+  - Full name (not empty)
+  - Valid email format
+  - Role selected from dropdown
+  - Password entered
+  - Status selected (Active/Inactive)
+</Accordion>
+
+<Accordion title="User deleted but still appears">
+  Refresh the page or wait a moment. The list refreshes automatically after deletion, but network latency may cause a brief delay.
+</Accordion>
+
+<Accordion title="Can't see role options in dropdown">
+  This indicates the role service isn't returning data. Check:
+  - API server is running
+  - `/Rol/Lista` endpoint is accessible
+  - Database contains role records
+</Accordion>
+
+<Accordion title="Password field shows dots/asterisks">
+  This is intentional for security. Click the eye icon to toggle password visibility while entering or editing.
+</Accordion>

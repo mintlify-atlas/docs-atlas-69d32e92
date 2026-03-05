@@ -1,0 +1,103 @@
+---
+title: List Roles
+api: GET /api/Rol/Lista
+---
+
+Retrieves a list of all available roles in the system.
+
+## Endpoint
+
+```
+GET /api/Rol/Lista
+```
+
+## Response
+
+Returns an array of roles available in the system.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="value" type="array">
+  List of roles
+  
+  <Expandable title="RolDTO properties">
+    <ResponseField name="idRol" type="integer">
+      Unique identifier for the role
+    </ResponseField>
+    
+    <ResponseField name="nombre" type="string">
+      Name of the role (e.g., "Administrador", "Empleado")
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.example.com/api/Rol/Lista" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Rol/Lista', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+```csharp C#
+using var client = new HttpClient();
+var response = await client.GetAsync("https://api.example.com/api/Rol/Lista");
+var data = await response.Content.ReadAsStringAsync();
+```
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "status": true,
+  "value": [
+    {
+      "idRol": 1,
+      "nombre": "Administrador"
+    },
+    {
+      "idRol": 2,
+      "nombre": "Empleado"
+    },
+    {
+      "idRol": 3,
+      "nombre": "Supervisor"
+    }
+  ],
+  "msg": null
+}
+```
+
+## Error Response
+
+```json
+{
+  "status": false,
+  "value": null,
+  "msg": "Error retrieving roles list"
+}
+```
+
+## Use Cases
+
+- Populate role dropdowns in user management interfaces
+- Display available roles during user registration
+- Role assignment and permission management

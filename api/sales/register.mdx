@@ -1,0 +1,255 @@
+---
+title: 'Register Sale'
+api: 'POST /api/Venta/Registrar'
+description: 'Register a new sale with its detail items'
+---
+
+## Request Body
+
+The request accepts a sale object containing the sale header information and an array of detail items.
+
+<ParamField body="NumeroDocumento" type="string" required>
+  Document number for the sale (invoice or receipt number)
+</ParamField>
+
+<ParamField body="TipoPago" type="string" required>
+  Payment type (e.g., "Efectivo", "Tarjeta", "Transferencia")
+</ParamField>
+
+<ParamField body="TotalTexto" type="string" required>
+  Total amount as text (formatted string)
+</ParamField>
+
+<ParamField body="DetalleVenta" type="array" required>
+  Array of sale detail items
+  
+  <Expandable title="DetalleVenta properties">
+    <ParamField body="IdProducto" type="integer" required>
+      Product identifier
+    </ParamField>
+    
+    <ParamField body="DescripcionProducto" type="string" required>
+      Product description or name
+    </ParamField>
+    
+    <ParamField body="Cantidad" type="integer" required>
+      Quantity of product sold
+    </ParamField>
+    
+    <ParamField body="PrecioTexto" type="string" required>
+      Unit price as text (formatted string)
+    </ParamField>
+    
+    <ParamField body="TotalTexto" type="string" required>
+      Line total as text (formatted string)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="boolean">
+  Indicates whether the operation was successful
+</ResponseField>
+
+<ResponseField name="value" type="object">
+  The registered sale object
+  
+  <Expandable title="VentaDTO properties">
+    <ResponseField name="IdVenta" type="integer">
+      Generated sale identifier
+    </ResponseField>
+    
+    <ResponseField name="NumeroDocumento" type="string">
+      Document number for the sale
+    </ResponseField>
+    
+    <ResponseField name="TipoPago" type="string">
+      Payment type
+    </ResponseField>
+    
+    <ResponseField name="TotalTexto" type="string">
+      Total amount as text
+    </ResponseField>
+    
+    <ResponseField name="FechaRegistro" type="string">
+      Registration date and time
+    </ResponseField>
+    
+    <ResponseField name="DetalleVenta" type="array">
+      Array of sale detail items
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST http://localhost:5000/api/Venta/Registrar \
+  -H "Content-Type: application/json" \
+  -d '{
+    "NumeroDocumento": "0001-00000123",
+    "TipoPago": "Efectivo",
+    "TotalTexto": "150.00",
+    "DetalleVenta": [
+      {
+        "IdProducto": 5,
+        "DescripcionProducto": "Laptop HP 15",
+        "Cantidad": 1,
+        "PrecioTexto": "120.00",
+        "TotalTexto": "120.00"
+      },
+      {
+        "IdProducto": 8,
+        "DescripcionProducto": "Mouse Inalámbrico",
+        "Cantidad": 2,
+        "PrecioTexto": "15.00",
+        "TotalTexto": "30.00"
+      }
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('http://localhost:5000/api/Venta/Registrar', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    NumeroDocumento: '0001-00000123',
+    TipoPago: 'Efectivo',
+    TotalTexto: '150.00',
+    DetalleVenta: [
+      {
+        IdProducto: 5,
+        DescripcionProducto: 'Laptop HP 15',
+        Cantidad: 1,
+        PrecioTexto: '120.00',
+        TotalTexto: '120.00'
+      },
+      {
+        IdProducto: 8,
+        DescripcionProducto: 'Mouse Inalámbrico',
+        Cantidad: 2,
+        PrecioTexto: '15.00',
+        TotalTexto: '30.00'
+      }
+    ]
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+url = 'http://localhost:5000/api/Venta/Registrar'
+data = {
+    'NumeroDocumento': '0001-00000123',
+    'TipoPago': 'Efectivo',
+    'TotalTexto': '150.00',
+    'DetalleVenta': [
+        {
+            'IdProducto': 5,
+            'DescripcionProducto': 'Laptop HP 15',
+            'Cantidad': 1,
+            'PrecioTexto': '120.00',
+            'TotalTexto': '120.00'
+        },
+        {
+            'IdProducto': 8,
+            'DescripcionProducto': 'Mouse Inalámbrico',
+            'Cantidad': 2,
+            'PrecioTexto': '15.00',
+            'TotalTexto': '30.00'
+        }
+    ]
+}
+
+response = requests.post(url, json=data)
+result = response.json()
+```
+
+```csharp C#
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+
+var client = new HttpClient();
+var sale = new {
+    NumeroDocumento = "0001-00000123",
+    TipoPago = "Efectivo",
+    TotalTexto = "150.00",
+    DetalleVenta = new[] {
+        new {
+            IdProducto = 5,
+            DescripcionProducto = "Laptop HP 15",
+            Cantidad = 1,
+            PrecioTexto = "120.00",
+            TotalTexto = "120.00"
+        },
+        new {
+            IdProducto = 8,
+            DescripcionProducto = "Mouse Inalámbrico",
+            Cantidad = 2,
+            PrecioTexto = "15.00",
+            TotalTexto = "30.00"
+        }
+    }
+};
+
+var json = JsonSerializer.Serialize(sale);
+var content = new StringContent(json, Encoding.UTF8, "application/json");
+var response = await client.PostAsync("http://localhost:5000/api/Venta/Registrar", content);
+var result = await response.Content.ReadAsStringAsync();
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json Success Response
+{
+  "status": true,
+  "value": {
+    "IdVenta": 42,
+    "NumeroDocumento": "0001-00000123",
+    "TipoPago": "Efectivo",
+    "TotalTexto": "150.00",
+    "FechaRegistro": "05/03/2026 10:30:45 AM",
+    "DetalleVenta": [
+      {
+        "IdProducto": 5,
+        "DescripcionProducto": "Laptop HP 15",
+        "Cantidad": 1,
+        "PrecioTexto": "120.00",
+        "TotalTexto": "120.00"
+      },
+      {
+        "IdProducto": 8,
+        "DescripcionProducto": "Mouse Inalámbrico",
+        "Cantidad": 2,
+        "PrecioTexto": "15.00",
+        "TotalTexto": "30.00"
+      }
+    ]
+  },
+  "msg": null
+}
+```
+
+```json Error Response
+{
+  "status": false,
+  "value": null,
+  "msg": "No se pudo registrar la venta"
+}
+```

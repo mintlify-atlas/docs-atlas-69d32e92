@@ -1,0 +1,632 @@
+---
+title: "Database Setup"
+description: "Configure Entity Framework Core with SQL Server and understand the database schema"
+---
+
+## Overview
+
+Sistema Venta uses Entity Framework Core 7.0.1 with SQL Server as the database provider. The database context and models are code-first generated from an existing database.
+
+## Database Context
+
+### DbventaContext Configuration
+
+The main database context is located at `SistemaVenta.DAL/DBContext/DbventaContext.cs:8`:
+
+```csharp SistemaVenta.DAL/DBContext/DbventaContext.cs
+public partial class DbventaContext : DbContext
+{
+    public DbventaContext()
+    {
+    }
+
+    public DbventaContext(DbContextOptions<DbventaContext> options)
+        : base(options)
+    {
+    }
+
+    // DbSet properties for each entity
+    public virtual DbSet<Categoria> Categoria { get; set; }
+    public virtual DbSet<DetalleVenta> DetalleVenta { get; set; }
+    public virtual DbSet<Menu> Menus { get; set; }
+    public virtual DbSet<MenuRol> MenuRols { get; set; }
+    public virtual DbSet<NumeroDocumento> NumeroDocumentos { get; set; }
+    public virtual DbSet<Producto> Productos { get; set; }
+    public virtual DbSet<Rol> Rols { get; set; }
+    public virtual DbSet<Usuario> Usuarios { get; set; }
+    public virtual DbSet<Venta> Venta { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Entity configurations
+    }
+}
+```
+
+### Connection String Registration
+
+The context is registered in `SistemaVenta.IOC/Dependencia.cs:24`:
+
+```csharp
+services.AddDbContext<DbventaContext>(options => {
+    options.UseSqlServer(configuration.GetConnectionString("cadenaSQL"));
+});
+```
+
+## Database Schema
+
+### Entity Models
+
+The database includes 9 main entities:
+
+<Accordion title="Categoria - Product Categories">
+
+```csharp SistemaVenta.Model/Categoria.cs
+public partial class Categoria
+{
+    public int IdCategoria { get; set; }
+    public string? Nombre { get; set; }
+    public bool? EsActivo { get; set; }
+    public DateTime? FechaRegistro { get; set; }
+    
+    public virtual ICollection<Producto> Productos { get; set; }
+}
+```
+
+**Configuration** (`DbventaContext.cs:41`):
+
+```csharp
+modelBuilder.Entity<Categoria>(entity =>
+{
+    entity.HasKey(e => e.IdCategoria);
+    entity.Property(e => e.IdCategoria).HasColumnName("idCategoria");
+    entity.Property(e => e.EsActivo).HasDefaultValueSql("((1))");
+    entity.Property(e => e.FechaRegistro)
+        .HasDefaultValueSql("(getdate())")
+        .HasColumnType("datetime");
+    entity.Property(e => e.Nombre)
+        .HasMaxLength(50)
+        .IsUnicode(false);
+});
+```
+
+</Accordion>
+
+<Accordion title="Producto - Products">
+
+```csharp SistemaVenta.Model/Producto.cs
+public partial class Producto
+{
+    public int IdProducto { get; set; }
+    public string? Nombre { get; set; }
+    public int? IdCategoria { get; set; }
+    public int? Stock { get; set; }
+    public decimal? Precio { get; set; }
+    public bool? EsActivo { get; set; }
+    public DateTime? FechaRegistro { get; set; }
+
+    public virtual ICollection<DetalleVenta> DetalleVenta { get; set; }
+    public virtual Categoria? IdCategoriaNavigation { get; set; }
+}
+```
+
+**Configuration** (`DbventaContext.cs:137`):
+
+```csharp
+modelBuilder.Entity<Producto>(entity =>
+{
+    entity.HasKey(e => e.IdProducto);
+    entity.Property(e => e.Precio)
+        .HasColumnType("decimal(10, 2)");
+    entity.Property(e => e.Stock).HasColumnName("stock");
+    
+    // Foreign key relationship
+    entity.HasOne(d => d.IdCategoriaNavigation)
+        .WithMany(p => p.Productos)
+        .HasForeignKey(d => d.IdCategoria);
+});
+```
+
+</Accordion>
+
+<Accordion title="Usuario - Users">
+
+```csharp SistemaVenta.Model/Usuario.cs
+public partial class Usuario
+{
+    public int IdUsuario { get; set; }
+    public string? NombreCompleto { get; set; }
+    public string? Correo { get; set; }
+    public int? IdRol { get; set; }
+    public string? Clave { get; set; }
+    public bool? EsActivo { get; set; }
+    public DateTime? FechaRegistro { get; set; }
+
+    public virtual Rol? IdRolNavigation { get; set; }
+}
+```
+
+**Configuration** (`DbventaContext.cs:183`):
+
+```csharp
+modelBuilder.Entity<Usuario>(entity =>
+{
+    entity.HasKey(e => e.IdUsuario);
+    entity.Property(e => e.Clave)
+        .HasMaxLength(40)
+        .IsUnicode(false);
+    entity.Property(e => e.Correo)
+        .HasMaxLength(40)
+        .IsUnicode(false);
+    entity.Property(e => e.NombreCompleto)
+        .HasMaxLength(100)
+        .IsUnicode(false);
+    
+    // Foreign key relationship
+    entity.HasOne(d => d.IdRolNavigation)
+        .WithMany(p => p.Usuarios)
+        .HasForeignKey(d => d.IdRol);
+});
+```
+
+</Accordion>
+
+<Accordion title="Venta - Sales">
+
+```csharp SistemaVenta.Model/Venta.cs
+public partial class Venta
+{
+    public int IdVenta { get; set; }
+    public string? NumeroDocumento { get; set; }
+    public string? TipoPago { get; set; }
+    public decimal? Total { get; set; }
+    public DateTime? FechaRegistro { get; set; }
+
+    public virtual ICollection<DetalleVenta> DetalleVenta { get; set; }
+}
+```
+
+**Configuration** (`DbventaContext.cs:216`):
+
+```csharp
+modelBuilder.Entity<Venta>(entity =>
+{
+    entity.HasKey(e => e.IdVenta);
+    entity.Property(e => e.Total)
+        .HasColumnType("decimal(10, 2)");
+    entity.Property(e => e.FechaRegistro)
+        .HasDefaultValueSql("(getdate())")
+        .HasColumnType("datetime");
+    entity.Property(e => e.NumeroDocumento)
+        .HasMaxLength(40)
+        .IsUnicode(false);
+    entity.Property(e => e.TipoPago)
+        .HasMaxLength(50)
+        .IsUnicode(false);
+});
+```
+
+</Accordion>
+
+<Accordion title="DetalleVenta - Sale Details">
+
+```csharp SistemaVenta.Model/DetalleVenta.cs
+public partial class DetalleVenta
+{
+    public int IdDetalleVenta { get; set; }
+    public int? IdVenta { get; set; }
+    public int? IdProducto { get; set; }
+    public int? Cantidad { get; set; }
+    public decimal? Precio { get; set; }
+    public decimal? Total { get; set; }
+
+    public virtual Producto? IdProductoNavigation { get; set; }
+    public virtual Venta? IdVentaNavigation { get; set; }
+}
+```
+
+**Configuration** (`DbventaContext.cs:59`):
+
+```csharp
+modelBuilder.Entity<DetalleVenta>(entity =>
+{
+    entity.HasKey(e => e.IdDetalleVenta);
+    entity.Property(e => e.Precio)
+        .HasColumnType("decimal(10, 2)");
+    entity.Property(e => e.Total)
+        .HasColumnType("decimal(10, 2)");
+    
+    // Foreign key relationships
+    entity.HasOne(d => d.IdProductoNavigation)
+        .WithMany(p => p.DetalleVenta)
+        .HasForeignKey(d => d.IdProducto);
+    
+    entity.HasOne(d => d.IdVentaNavigation)
+        .WithMany(p => p.DetalleVenta)
+        .HasForeignKey(d => d.IdVenta);
+});
+```
+
+</Accordion>
+
+<Accordion title="Rol - User Roles">
+
+```csharp
+public partial class Rol
+{
+    public int IdRol { get; set; }
+    public string? Nombre { get; set; }
+    public DateTime? FechaRegistro { get; set; }
+    
+    public virtual ICollection<Usuario> Usuarios { get; set; }
+    public virtual ICollection<MenuRol> MenuRols { get; set; }
+}
+```
+
+</Accordion>
+
+<Accordion title="Menu - Navigation Menu">
+
+```csharp
+public partial class Menu
+{
+    public int IdMenu { get; set; }
+    public string? Nombre { get; set; }
+    public string? Icono { get; set; }
+    public string? Url { get; set; }
+    
+    public virtual ICollection<MenuRol> MenuRols { get; set; }
+}
+```
+
+</Accordion>
+
+<Accordion title="MenuRol - Menu Permissions">
+
+```csharp
+public partial class MenuRol
+{
+    public int IdMenuRol { get; set; }
+    public int? IdMenu { get; set; }
+    public int? IdRol { get; set; }
+    
+    public virtual Menu? IdMenuNavigation { get; set; }
+    public virtual Rol? IdRolNavigation { get; set; }
+}
+```
+
+</Accordion>
+
+<Accordion title="NumeroDocumento - Document Numbers">
+
+```csharp
+public partial class NumeroDocumento
+{
+    public int IdNumeroDocumento { get; set; }
+    public int UltimoNumero { get; set; }
+    public DateTime? FechaRegistro { get; set; }
+}
+```
+
+Used to generate sequential document numbers for sales.
+
+</Accordion>
+
+## Repository Pattern
+
+### Generic Repository
+
+The application uses a generic repository pattern (`SistemaVenta.DAL/Repositorios/GenericRepository.cs:15`):
+
+```csharp SistemaVenta.DAL/Repositorios/GenericRepository.cs
+public class GenericRepository<TModelo> : IGenericRepository<TModelo> 
+    where TModelo : class
+{
+    private readonly DbventaContext _dbcontext;
+
+    public GenericRepository(DbventaContext dbcontext)
+    {
+        _dbcontext = dbcontext;
+    }
+
+    public async Task<TModelo> Obtener(Expression<Func<TModelo, bool>> filtro)
+    {
+        TModelo modelo = await _dbcontext.Set<TModelo>()
+            .FirstOrDefaultAsync(filtro);
+        return modelo;
+    }
+
+    public async Task<TModelo> Crear(TModelo modelo)
+    {
+        _dbcontext.Set<TModelo>().Add(modelo);
+        await _dbcontext.SaveChangesAsync();
+        return modelo;
+    }
+
+    public async Task<bool> Editar(TModelo modelo)
+    {
+        _dbcontext.Set<TModelo>().Update(modelo);
+        await _dbcontext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> Eliminar(TModelo modelo)
+    {
+        _dbcontext.Set<TModelo>().Remove(modelo);
+        await _dbcontext.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<IQueryable<TModelo>> Consultar(
+        Expression<Func<TModelo, bool>> filtro = null)
+    {
+        IQueryable<TModelo> queryModelo = filtro == null 
+            ? _dbcontext.Set<TModelo>() 
+            : _dbcontext.Set<TModelo>().Where(filtro);
+        return queryModelo;
+    }
+}
+```
+
+<Note>
+The generic repository provides:
+- `Obtener` - Get single entity by filter
+- `Crear` - Create new entity
+- `Editar` - Update existing entity
+- `Eliminar` - Delete entity
+- `Consultar` - Query entities with optional filter
+</Note>
+
+### Specialized Repositories
+
+For complex operations, specialized repositories extend the generic pattern:
+
+```csharp
+public interface IVentaRepository : IGenericRepository<Venta>
+{
+    Task<Venta> Registrar(Venta modelo);
+}
+
+public class VentaRepository : GenericRepository<Venta>, IVentaRepository
+{
+    private readonly DbventaContext _dbcontext;
+    
+    public VentaRepository(DbventaContext dbcontext) : base(dbcontext)
+    {
+        _dbcontext = dbcontext;
+    }
+    
+    public async Task<Venta> Registrar(Venta modelo)
+    {
+        // Custom logic for sale registration
+    }
+}
+```
+
+## Database Setup Instructions
+
+<Steps>
+
+### Step 1: Install Required Packages
+
+Ensure you have Entity Framework Core packages installed:
+
+```bash
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 7.0.1
+dotnet add package Microsoft.EntityFrameworkCore.Tools --version 7.0.1
+```
+
+### Step 2: Configure Connection String
+
+Update `appsettings.json` with your SQL Server connection:
+
+<CodeGroup>
+
+```json Windows Authentication
+{
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=localhost;Database=DBVENTA;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+```json SQL Server Authentication
+{
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=localhost;Database=DBVENTA;User Id=sa;Password=YourPassword;TrustServerCertificate=True;"
+  }
+}
+```
+
+```json Azure SQL
+{
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=tcp:yourserver.database.windows.net,1433;Database=DBVENTA;User ID=yourusername;Password=yourpassword;Encrypt=True;TrustServerCertificate=False;"
+  }
+}
+```
+
+</CodeGroup>
+
+### Step 3: Create Database
+
+The application expects an existing database. Create it using SQL Server Management Studio or:
+
+```sql
+CREATE DATABASE DBVENTA;
+GO
+```
+
+### Step 4: Run Database Scripts
+
+Execute the SQL scripts to create tables with the schema matching the entity configurations in `DbventaContext`.
+
+### Step 5: Verify Connection
+
+Run the application and check the logs for successful database connection.
+
+</Steps>
+
+## Database Migrations
+
+<Warning>
+This project was scaffolded from an existing database. If you need to make schema changes:
+
+1. Modify the database directly
+2. Update the entity models and configurations in code
+3. Or convert to migration-based approach using:
+
+```bash
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+</Warning>
+
+## Connection String Best Practices
+
+### Development
+
+```json appsettings.Development.json
+{
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=localhost;Database=DBVENTA;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+### Production
+
+Use environment variables or Azure Key Vault:
+
+```csharp
+services.AddDbContext<DbventaContext>(options =>
+{
+    var connectionString = Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING")
+        ?? configuration.GetConnectionString("cadenaSQL");
+    options.UseSqlServer(connectionString);
+});
+```
+
+### Docker
+
+```json
+{
+  "ConnectionStrings": {
+    "cadenaSQL": "Server=sqlserver;Database=DBVENTA;User Id=sa;Password=YourStrong@Password;TrustServerCertificate=True;"
+  }
+}
+```
+
+## Entity Relationships Diagram
+
+```
+Categoria
+    └─→ Producto (One-to-Many)
+            └─→ DetalleVenta (One-to-Many)
+
+Rol
+    ├─→ Usuario (One-to-Many)
+    └─→ MenuRol (One-to-Many)
+
+Menu
+    └─→ MenuRol (One-to-Many)
+
+Venta
+    └─→ DetalleVenta (One-to-Many)
+
+NumeroDocumento (Independent)
+```
+
+## Querying the Database
+
+### Using Repository Pattern
+
+```csharp
+// Inject repository in your service
+public class ProductoService
+{
+    private readonly IGenericRepository<Producto> _productoRepository;
+    
+    // Get all active products
+    var productos = await _productoRepository.Consultar(p => p.EsActivo == true);
+    
+    // Get product by ID
+    var producto = await _productoRepository.Obtener(p => p.IdProducto == id);
+    
+    // Create new product
+    var nuevoProducto = await _productoRepository.Crear(producto);
+    
+    // Update product
+    await _productoRepository.Editar(producto);
+    
+    // Delete product
+    await _productoRepository.Eliminar(producto);
+}
+```
+
+### Using DbContext Directly
+
+```csharp
+// Include related entities
+var productos = await _context.Productos
+    .Include(p => p.IdCategoriaNavigation)
+    .Where(p => p.EsActivo == true)
+    .ToListAsync();
+
+// Complex queries with multiple joins
+var ventasConDetalles = await _context.Venta
+    .Include(v => v.DetalleVenta)
+        .ThenInclude(d => d.IdProductoNavigation)
+    .Where(v => v.FechaRegistro >= fechaInicio)
+    .ToListAsync();
+```
+
+## Troubleshooting
+
+<Accordion title="Cannot connect to SQL Server">
+
+**Error:** `A network-related or instance-specific error occurred`
+
+**Solutions:**
+- Verify SQL Server is running
+- Check server name is correct (`.\SQLEXPRESS` or `localhost`)
+- Enable TCP/IP in SQL Server Configuration Manager
+- Check Windows Firewall settings
+- Add `TrustServerCertificate=True` to connection string
+
+</Accordion>
+
+<Accordion title="Login failed for user">
+
+**Error:** `Login failed for user 'NT AUTHORITY\SYSTEM'`
+
+**Solutions:**
+- For Windows Authentication: Ensure the application pool identity has access
+- For SQL Authentication: Verify username and password are correct
+- Check SQL Server authentication mode (mixed mode vs Windows only)
+
+</Accordion>
+
+<Accordion title="Database does not exist">
+
+**Error:** `Cannot open database "DBVENTA" requested by the login`
+
+**Solution:**
+Create the database first:
+
+```sql
+CREATE DATABASE DBVENTA;
+```
+
+</Accordion>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/backend/configuration">
+    Configure dependency injection and services
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/backend/deployment">
+    Deploy the API to production
+  </Card>
+</CardGroup>

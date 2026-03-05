@@ -1,0 +1,229 @@
+---
+title: 'Session Management'
+api: 'GET /api/Usuario/Lista'
+description: 'Retrieve user list and session information'
+---
+
+## Overview
+
+This endpoint retrieves a list of all users in the system. It's typically used for user management and session verification purposes.
+
+## Request
+
+### Endpoint
+
+```
+GET /api/Usuario/Lista
+```
+
+### Headers
+
+<ParamField header="Content-Type" type="string">
+  application/json
+</ParamField>
+
+## Response
+
+### Success Response (200 OK)
+
+Returns a response wrapper containing a list of users.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates if the operation was successful
+</ResponseField>
+
+<ResponseField name="value" type="array">
+  Array of user objects
+  
+  <Expandable title="UsuarioDTO properties">
+    <ResponseField name="IdUsuario" type="integer">
+      Unique identifier for the user
+    </ResponseField>
+    
+    <ResponseField name="NombreCompleto" type="string">
+      Full name of the user
+    </ResponseField>
+    
+    <ResponseField name="Correo" type="string">
+      Email address of the user
+    </ResponseField>
+    
+    <ResponseField name="IdRol" type="integer">
+      Role ID assigned to the user
+    </ResponseField>
+    
+    <ResponseField name="RolDescripcion" type="string">
+      Human-readable role description
+    </ResponseField>
+    
+    <ResponseField name="Clave" type="string">
+      User password (hashed or masked)
+    </ResponseField>
+    
+    <ResponseField name="EsActivo" type="integer">
+      Status flag: 1 for active, 0 for inactive
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message (populated when status is false)
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash curl
+curl -X GET https://api.example.com/api/Usuario/Lista \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.example.com/api/Usuario/Lista', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+const data = await response.json();
+console.log(data);
+```
+
+```python Python
+import requests
+
+url = 'https://api.example.com/api/Usuario/Lista'
+headers = {'Content-Type': 'application/json'}
+
+response = requests.get(url, headers=headers)
+print(response.json())
+```
+
+```csharp C#
+using System.Net.Http;
+using System.Text.Json;
+
+var client = new HttpClient();
+var response = await client.GetAsync(
+    "https://api.example.com/api/Usuario/Lista"
+);
+
+var result = await response.Content.ReadAsStringAsync();
+var users = JsonSerializer.Deserialize<Response<List<UsuarioDTO>>>(result);
+```
+
+</CodeGroup>
+
+### Success Response Example
+
+```json
+{
+  "status": true,
+  "value": [
+    {
+      "IdUsuario": 1,
+      "NombreCompleto": "Juan Pérez",
+      "Correo": "admin@example.com",
+      "IdRol": 1,
+      "RolDescripcion": "Administrador",
+      "Clave": null,
+      "EsActivo": 1
+    },
+    {
+      "IdUsuario": 2,
+      "NombreCompleto": "María González",
+      "Correo": "maria@example.com",
+      "IdRol": 2,
+      "RolDescripcion": "Empleado",
+      "Clave": null,
+      "EsActivo": 1
+    }
+  ],
+  "msg": null
+}
+```
+
+### Error Response Example
+
+```json
+{
+  "status": false,
+  "value": null,
+  "msg": "Error al obtener la lista de usuarios"
+}
+```
+
+## Error Codes
+
+<ResponseField name="status: false" type="error">
+  Request failure
+  
+  **Common error messages:**
+  - "Error al obtener la lista de usuarios" - Database or service error
+  - "Acceso denegado" - Insufficient permissions
+  - "Servicio no disponible" - Service temporarily unavailable
+</ResponseField>
+
+## Related Endpoints
+
+### Create User
+
+```
+POST /api/Usuario/Guardar
+```
+
+Creates a new user in the system.
+
+**Request Body:**
+```json
+{
+  "NombreCompleto": "Carlos Ruiz",
+  "Correo": "carlos@example.com",
+  "IdRol": 2,
+  "Clave": "securePassword123",
+  "EsActivo": 1
+}
+```
+
+### Update User
+
+```
+PUT /api/Usuario/Editar
+```
+
+Updates an existing user's information.
+
+**Request Body:**
+```json
+{
+  "IdUsuario": 3,
+  "NombreCompleto": "Carlos Ruiz Actualizado",
+  "Correo": "carlos.ruiz@example.com",
+  "IdRol": 1,
+  "Clave": "newPassword456",
+  "EsActivo": 1
+}
+```
+
+### Delete User
+
+```
+DELETE /api/Usuario/Eliminar/{id}
+```
+
+Deletes a user from the system.
+
+**Example:**
+```bash
+curl -X DELETE https://api.example.com/api/Usuario/Eliminar/3
+```
+
+## Notes
+
+- The endpoint always returns HTTP 200 OK status code. Check the `status` field in the response body to determine success or failure.
+- The `Clave` (password) field may be null or masked in responses for security purposes.
+- `EsActivo` field uses integer values: 1 for active users, 0 for inactive/disabled users.
+- This endpoint requires appropriate authentication and authorization (implementation dependent).
+- Use this endpoint to validate active sessions by checking if the user's `EsActivo` status is 1.

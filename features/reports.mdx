@@ -1,0 +1,394 @@
+---
+title: 'Reports & Analytics'
+description: 'Generate sales reports, analyze business performance, and export data'
+icon: 'chart-line'
+---
+
+## Overview
+
+The Reports module provides powerful analytics and data export capabilities for Sistema Venta. Generate detailed sales reports filtered by date range, analyze transaction data, and export reports to Excel for further analysis or record-keeping.
+
+## Accessing Reports
+
+Navigate to **Reporte** or **Reporte Venta** (Sales Report) from the main menu to access the reporting interface.
+
+## Report Interface
+
+The reports page consists of three main sections:
+
+<CardGroup cols={3}>
+  <Card title="Date Filters" icon="calendar">
+    Select date range for report generation
+  </Card>
+  
+  <Card title="Results Table" icon="table">
+    Detailed line-by-line sales data
+  </Card>
+  
+  <Card title="Export Options" icon="file-export">
+    Download reports as Excel files
+  </Card>
+</CardGroup>
+
+## Generating a Sales Report
+
+<Steps>
+  <Step title="Select Date Range">
+    Choose the reporting period using the date picker fields:
+    
+    - **Fecha Inicio** (Start Date): Click the calendar icon, select start date
+    - **Fecha Fin** (End Date): Click the calendar icon, select end date
+    
+    Date format: DD/MM/YYYY (e.g., 15/03/2026)
+  </Step>
+  
+  <Step title="Run the Report">
+    Click the **Buscar** (Search) button to generate the report.
+    
+    The system will:
+    - Validate both dates are selected
+    - Send request to `/Venta/Reporte` endpoint
+    - Retrieve all sales within the date range
+    - Display results in the table below
+  </Step>
+  
+  <Step title="Review Results">
+    The report table shows detailed transaction data with pagination support. Review the data or proceed to export.
+  </Step>
+</Steps>
+
+<Note>
+Both start and end dates are required. The search button remains disabled until both dates are selected (`reporte.component.ts:50-51`).
+</Note>
+
+## Report Data Structure
+
+The sales report displays comprehensive transaction details:
+
+### Table Columns
+
+| Column | Description | Data Source |
+|--------|-------------|-------------|
+| **Fecha Registro** | Date and time of sale | Transaction timestamp |
+| **Numero de Venta** | Unique sale identifier | numeroDocumento |
+| **Tipo de Pago** | Payment method | Efectivo or Tarjeta |
+| **Total** | Complete sale total | totalVenta |
+| **Producto** | Product name | Individual product |
+| **Cantidad** | Quantity sold | Per product |
+| **Precio** | Unit price | Per product |
+| **Total por Producto** | Line item total | Cantidad × Precio |
+
+### Report Format
+
+The report displays **line-by-line** details, meaning:
+- Each row represents one product from a sale
+- Sales with multiple products appear on multiple rows
+- Same sale number appears on multiple rows for multi-item sales
+- Enables detailed product-level analysis
+
+<Accordion title="Example: Multi-Product Sale">
+  A single sale with 2 products appears as 2 rows:
+  
+  | Fecha | Numero Venta | Total | Producto | Cantidad | Precio | Total Producto |
+  |-------|--------------|-------|----------|----------|--------|----------------|
+  | 15/03/2026 | 00001 | 1599.98 | Laptop Dell | 1 | 1299.99 | 1299.99 |
+  | 15/03/2026 | 00001 | 1599.98 | Mouse Logitech | 1 | 299.99 | 299.99 |
+  
+  Notice both rows share the same sale number and total, but show different products.
+</Accordion>
+
+## Date Range Selection
+
+The report uses Material Design date pickers for easy date selection:
+
+### Date Picker Features
+- **Calendar UI**: Click calendar icon to open visual date picker
+- **Month/Year Navigation**: Navigate months and years quickly
+- **Date Format**: DD/MM/YYYY (e.g., 05/03/2026)
+- **Validation**: Prevents invalid dates
+- **Custom Format**: Configured via `MY_DATA_FORMATS` in component
+
+### Date Range Tips
+
+<CardGroup cols={2}>
+  <Card title="Single Day Report" icon="calendar-day">
+    Set both start and end dates to the same day to see sales for just that date.
+  </Card>
+  
+  <Card title="Monthly Report" icon="calendar-days">
+    Set start date to first of month and end date to last day for complete monthly sales.
+  </Card>
+  
+  <Card title="Quarter/Year Report" icon="calendar">
+    Select first and last days of quarter or year for longer-term analysis.
+  </Card>
+  
+  <Card title="Custom Periods" icon="calendar-range">
+    Any date range is supported - analyze week-over-week, promotional periods, or custom ranges.
+  </Card>
+</CardGroup>
+
+## Viewing Report Results
+
+After generating a report, the data appears in a paginated table:
+
+### Pagination Options
+- **5 rows per page**: Quick overview
+- **10 rows per page**: Moderate detail
+- **20 rows per page**: Extensive view
+
+Use the pagination controls to navigate:
+- First page button
+- Previous page button  
+- Page numbers
+- Next page button
+- Last page button
+
+### No Results Message
+
+If no sales exist in the selected date range:
+- Table displays empty
+- Alert message: "No se encontraron datos" (No data found)
+- Try adjusting date range or verify sales exist in system
+
+## Exporting to Excel
+
+Sistema Venta includes built-in Excel export functionality for offline analysis and record-keeping.
+
+<Steps>
+  <Step title="Generate Report">
+    First, run a report using the date filters. The export button is disabled until report data exists.
+  </Step>
+  
+  <Step title="Click Export">
+    Click the red **Exportar Excel** (Export Excel) button above the report table.
+  </Step>
+  
+  <Step title="Download File">
+    The system generates an Excel file named **"Reporte Ventas.xlsx"** and downloads it to your browser's download folder.
+  </Step>
+</Steps>
+
+### Excel Export Features
+
+The exported Excel file includes:
+- **All report columns**: Every field from the report table
+- **All rows**: Complete dataset, not just current page
+- **Single worksheet**: Named "Reporte" 
+- **Header row**: Column names included
+- **Raw data**: Unformatted data ready for analysis
+
+<Tip>
+The export uses the XLSX library (`reporte.component.ts:93-99`) to generate true Excel files, not CSV. This preserves data types and allows for advanced Excel features like formulas, charts, and pivot tables.
+</Tip>
+
+## Excel Export Structure
+
+The exported Excel file contains columns matching the report:
+
+```
+| fechaRegistro | numeroDocumento | tipoPago  | totalVenta | producto      | cantidad | precio  | total   |
+|---------------|-----------------|-----------|------------|---------------|----------|---------|---------|
+| 15/03/2026    | 00001          | Efectivo  | 1299.99    | Laptop Dell   | 1        | 1299.99 | 1299.99 |
+| 15/03/2026    | 00002          | Tarjeta   | 599.98     | Mouse         | 2        | 299.99  | 599.98  |
+```
+
+### Working with Exported Data
+
+Once exported, you can:
+- **Create Pivot Tables**: Analyze sales by product, date, payment method
+- **Build Charts**: Visualize trends and patterns
+- **Apply Formulas**: Calculate averages, totals, margins
+- **Share Reports**: Email to stakeholders or archive
+- **Import to Other Systems**: Use in accounting software, BI tools, etc.
+
+## Report Analysis Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Daily Sales Summary" icon="calendar-day">
+    **Purpose**: Track daily performance
+    
+    Set date range to current day, export to see total revenue and top products.
+  </Card>
+  
+  <Card title="Product Performance" icon="box">
+    **Purpose**: Identify best/worst sellers
+    
+    Generate monthly report, export to Excel, create pivot table by product name.
+  </Card>
+  
+  <Card title="Payment Method Trends" icon="credit-card">
+    **Purpose**: Understand customer payment preferences
+    
+    Use Excel to calculate percentage of cash vs. card sales.
+  </Card>
+  
+  <Card title="Revenue Analysis" icon="dollar-sign">
+    **Purpose**: Track sales trends over time
+    
+    Export multiple periods, create chart showing revenue by week/month.
+  </Card>
+</CardGroup>
+
+## API Integration
+
+The Reports module uses the following API endpoint:
+
+```typescript
+// Get sales report by date range
+GET /Venta/Reporte?fechaInicio={DD/MM/YYYY}&fechaFin={DD/MM/YYYY}
+
+// Example
+GET /Venta/Reporte?fechaInicio=01/03/2026&fechaFin=31/03/2026
+
+// Response structure
+{
+  "status": true,
+  "value": [
+    {
+      "fechaRegistro": "15/03/2026 14:30:00",
+      "numeroDocumento": "00001",
+      "tipoPago": "Efectivo",
+      "totalVenta": "1299.99",
+      "producto": "Laptop Dell Inspiron 15",
+      "cantidad": 1,
+      "precio": "1299.99",
+      "total": "1299.99"
+    },
+    // ... more line items
+  ]
+}
+```
+
+## Date Formatting
+
+Sistema Venta uses the Moment.js library for consistent date handling:
+
+- **Input Format**: Browser native date picker
+- **Display Format**: DD/MM/YYYY (e.g., 15/03/2026)
+- **API Format**: DD/MM/YYYY string
+- **Timezone**: Uses local browser timezone
+- **Validation**: "Invalid date" detected and rejected
+
+The formatting is configured via `MY_DATA_FORMATS` constant (`reporte.component.ts:16-24`).
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Regular Exports" icon="floppy-disk">
+    Export reports regularly for backup and offline access. Excel files serve as point-in-time snapshots.
+  </Card>
+  
+  <Card title="Consistent Periods" icon="calendar-check">
+    Use consistent date ranges (e.g., always month-end to month-end) for trend analysis.
+  </Card>
+  
+  <Card title="Validate Data" icon="circle-check">
+    Cross-reference report totals with dashboard or accounting records to ensure accuracy.
+  </Card>
+  
+  <Card title="Archive Reports" icon="folder">
+    Save exported Excel files with descriptive names including date ranges for easy retrieval.
+  </Card>
+</CardGroup>
+
+## Advanced Excel Analysis
+
+After exporting, enhance your reports with Excel features:
+
+### Create Pivot Tables
+1. Open exported file in Excel
+2. Select data range
+3. Insert > PivotTable
+4. Drag fields to analyze:
+   - Rows: Producto (to see sales by product)
+   - Values: Sum of total (total revenue per product)
+   - Filters: tipoPago (filter by payment method)
+
+### Build Charts
+1. Select data columns
+2. Insert > Chart (Column, Line, Pie, etc.)
+3. Visualize trends like:
+   - Sales over time (line chart)
+   - Top products (bar chart)
+   - Payment method distribution (pie chart)
+
+### Calculate Metrics
+Add columns for calculated metrics:
+- **Profit Margin**: If you track cost data
+- **Average Sale Value**: Total ÷ Count of unique numeroDocumento
+- **Units per Sale**: Average quantity per transaction
+- **Daily Averages**: Total revenue ÷ Number of days
+
+## Related Components
+
+- **Component**: `reporte.component.ts` - Report generation and export logic
+- **Template**: `reporte.component.html` - Report interface and filters
+- **Service**: `venta.service.ts:26-28` - Report data API endpoint
+- **Library**: XLSX - Excel file generation (`reporte.component.ts:10`)
+- **Library**: Moment.js - Date formatting and validation
+
+## Troubleshooting
+
+<Accordion title="Search button is disabled">
+  Both date fields must be filled before you can search. Click the calendar icon on each field and select dates.
+  
+  Check that:
+  - Fecha Inicio is selected
+  - Fecha Fin is selected
+  - Both dates are valid
+</Accordion>
+
+<Accordion title="Invalid date error after clicking search">
+  One or both dates are invalid. This happens when:
+  - Date picker is opened but no date is selected
+  - Form is submitted with empty date fields
+  
+  Fix: Click calendar icon on both fields and select valid dates.
+</Accordion>
+
+<Accordion title="Report shows no data">
+  Two possible causes:
+  1. **No sales in date range**: Try expanding date range or verify sales exist
+  2. **API error**: Check console for errors, verify backend is running
+  
+  Alert message: "No se encontraron datos"
+</Accordion>
+
+<Accordion title="Export button is disabled">
+  The export button remains disabled until report data exists. Generate a report first by:
+  1. Selecting date range
+  2. Clicking Search
+  3. Waiting for results to load
+  
+  Export button enables when `listaVentasReporte.length > 0`
+</Accordion>
+
+<Accordion title="Excel file won't open">
+  The export generates true .xlsx format. If it won't open:
+  - Ensure you have Excel, LibreOffice, or compatible software
+  - Check download completed successfully (file size > 0)
+  - Try re-exporting the report
+  - Verify browser didn't corrupt download
+</Accordion>
+
+<Accordion title="Report data doesn't match sales history">
+  Reports show line-item details (one row per product), while sales history shows transactions (one row per sale).
+  
+  A sale with 3 products appears as:
+  - **Sales History**: 1 row
+  - **Report**: 3 rows
+  
+  This is expected behavior for detailed analysis.
+</Accordion>
+
+## Performance Considerations
+
+<Note>
+Large date ranges with many sales may take longer to load. Consider:
+- Breaking large date ranges into smaller periods
+- Using specific date ranges rather than all-time reports
+- Exporting to Excel for faster analysis of large datasets
+</Note>
+
+The report table includes pagination to handle large result sets efficiently, displaying 5-20 rows at a time based on your preference.

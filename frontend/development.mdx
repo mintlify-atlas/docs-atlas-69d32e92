@@ -1,0 +1,476 @@
+---
+title: 'Frontend Development'
+description: 'Development guide for the Sistema Venta Angular application'
+icon: 'code'
+---
+
+## Development Setup
+
+This guide covers the development workflow for the Sistema Venta frontend application, including running the dev server, testing, and building the application.
+
+## Installation
+
+<Steps>
+  <Step title="Install Dependencies">
+    Navigate to the frontend directory and install all npm packages:
+
+    ```bash
+    cd AppSistemaVenta
+    npm install
+    ```
+
+    This will install all dependencies from `package.json`, including:
+    - Angular 14.2.0 framework
+    - Angular Material 14.2.7
+    - Chart.js for visualizations
+    - SweetAlert2 for notifications
+    - XLSX for Excel exports
+    - Moment.js for date handling
+  </Step>
+
+  <Step title="Configure API Endpoint">
+    Update the backend API endpoint in your environment file:
+
+    ```typescript src/environments/environment.ts
+    export const environment = {
+      production: false,
+      endpoint: "http://localhost:5000/api/"  // Update to your API URL
+    };
+    ```
+
+    <Note>
+      Ensure your backend API is running and accessible at the configured endpoint.
+    </Note>
+  </Step>
+
+  <Step title="Verify Installation">
+    Check that the Angular CLI is installed correctly:
+
+    ```bash
+    ng version
+    ```
+
+    You should see Angular CLI version 14.2.4 or compatible.
+  </Step>
+</Steps>
+
+## Development Server
+
+### Starting the Server
+
+Run the development server with hot reload:
+
+<CodeGroup>
+```bash npm
+npm start
+```
+
+```bash ng serve
+ng serve
+```
+
+```bash Custom Port
+ng serve --port 4300
+```
+
+```bash Open Browser
+ng serve --open
+```
+</CodeGroup>
+
+The application will be available at `http://localhost:4200/` by default.
+
+<Note>
+  The dev server automatically recompiles and reloads when you make changes to source files.
+</Note>
+
+### Development Configuration
+
+The development build uses these optimizations (configured in `angular.json`):
+
+```json angular.json
+"development": {
+  "buildOptimizer": false,
+  "optimization": false,
+  "vendorChunk": true,
+  "extractLicenses": false,
+  "sourceMap": true,
+  "namedChunks": true
+}
+```
+
+## Application Structure
+
+### Feature Modules
+
+The application uses lazy loading for better performance:
+
+```typescript
+// Main routes with lazy loading
+const routes: Routes = [
+  { path: '', component: LoginComponent },
+  { path: 'login', component: LoginComponent },
+  { 
+    path: 'pages', 
+    loadChildren: () => import("./Components/layout/layout.module")
+      .then(m => m.LayoutModule)  // Lazy loaded
+  }
+];
+```
+
+### Component Organization
+
+<Tabs>
+  <Tab title="Pages">
+    Main application pages under `/pages` route:
+    
+    - **Dashboard** (`/pages/dashboard`) - Analytics and metrics
+    - **Usuarios** (`/pages/usuarios`) - User management
+    - **Productos** (`/pages/productos`) - Product catalog
+    - **Venta** (`/pages/venta`) - New sales transaction
+    - **Historial Venta** (`/pages/historial_venta`) - Sales history
+    - **Reportes** (`/pages/reportes`) - Reports and analytics
+  </Tab>
+  
+  <Tab title="Services">
+    API services for backend communication:
+    
+    ```typescript
+    Services/
+    ├── usuario.service.ts      // User & auth operations
+    ├── producto.service.ts     // Product CRUD
+    ├── venta.service.ts        // Sales transactions
+    ├── categoria.service.ts    // Categories
+    ├── rol.service.ts          // User roles
+    ├── menu.service.ts         // Navigation menu
+    └── dash-board.service.ts   // Dashboard data
+    ```
+  </Tab>
+  
+  <Tab title="Shared Module">
+    Reusable components and Material modules:
+    
+    ```typescript src/app/Reutilizable/shared/shared.module.ts
+    @NgModule({
+      exports: [
+        // Forms
+        ReactiveFormsModule,
+        FormsModule,
+        HttpClientModule,
+        
+        // Material Components
+        MatCardModule,
+        MatInputModule,
+        MatSelectModule,
+        MatTableModule,
+        MatPaginatorModule,
+        MatDialogModule,
+        MatSnackBarModule,
+        MatDatepickerModule,
+        // ... more Material modules
+      ]
+    })
+    ```
+  </Tab>
+</Tabs>
+
+## Working with Services
+
+### Creating a New Service
+
+Generate a new service using Angular CLI:
+
+```bash
+ng generate service Services/example
+```
+
+### Service Pattern
+
+All services follow this pattern:
+
+<CodeGroup>
+```typescript Pattern Example
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
+import { ResponseApi } from '../Interfaces/response-api';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class ExampleService {
+  private urlApi: string = environment.endpoint + "Example/";
+
+  constructor(private http: HttpClient) { }
+
+  // GET request
+  lista(): Observable<ResponseApi> {
+    return this.http.get<ResponseApi>(`${this.urlApi}Lista`);
+  }
+
+  // POST request
+  guardar(request: any): Observable<ResponseApi> {
+    return this.http.post<ResponseApi>(`${this.urlApi}Guardar`, request);
+  }
+
+  // PUT request
+  editar(request: any): Observable<ResponseApi> {
+    return this.http.put<ResponseApi>(`${this.urlApi}Editar`, request);
+  }
+
+  // DELETE request
+  eliminar(id: number): Observable<ResponseApi> {
+    return this.http.delete<ResponseApi>(`${this.urlApi}Eliminar/${id}`);
+  }
+}
+```
+
+```typescript Usage in Component
+import { Component, OnInit } from '@angular/core';
+import { ExampleService } from 'src/app/Services/example.service';
+
+export class ExampleComponent implements OnInit {
+  constructor(private exampleService: ExampleService) { }
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  loadData() {
+    this.exampleService.lista().subscribe({
+      next: (response) => {
+        if (response.status) {
+          // Handle success
+          console.log(response.value);
+        }
+      },
+      error: (error) => {
+        // Handle error
+        console.error(error);
+      }
+    });
+  }
+}
+```
+</CodeGroup>
+
+## Building the Application
+
+### Development Build
+
+Build with source maps and no optimization:
+
+```bash
+ng build --configuration development
+```
+
+### Watch Mode
+
+Continuously build on file changes:
+
+```bash
+npm run watch
+# or
+ng build --watch --configuration development
+```
+
+### Production Build
+
+Optimized build for production:
+
+```bash
+npm run build
+# or
+ng build --configuration production
+```
+
+Production build features:
+- Minification and optimization
+- AOT (Ahead-of-Time) compilation
+- Tree shaking to remove unused code
+- Output hashing for cache busting
+- Environment file replacement
+
+<Note>
+  Production builds are output to `dist/app-sistema-venta/`
+</Note>
+
+## Build Configuration
+
+### Bundle Size Budgets
+
+The application has bundle size limits configured:
+
+```json angular.json
+"budgets": [
+  {
+    "type": "initial",
+    "maximumWarning": "500kb",
+    "maximumError": "1mb"
+  },
+  {
+    "type": "anyComponentStyle",
+    "maximumWarning": "2kb",
+    "maximumError": "4kb"
+  }
+]
+```
+
+<Note>
+  If your build exceeds these limits, you'll receive warnings or errors. Consider code splitting or lazy loading.
+</Note>
+
+## Testing
+
+### Running Unit Tests
+
+Execute unit tests via Karma:
+
+```bash
+npm test
+# or
+ng test
+```
+
+### Test Configuration
+
+Tests are configured in `karma.conf.js` with:
+- Jasmine test framework
+- Chrome launcher
+- Code coverage reporting
+
+## Common Development Tasks
+
+<Steps>
+  <Step title="Generate a New Component">
+    ```bash
+    ng generate component Components/layout/Pages/new-page
+    ```
+    
+    Add the route in `layout-routing.module.ts`:
+    ```typescript
+    { path: 'new-page', component: NewPageComponent }
+    ```
+  </Step>
+
+  <Step title="Add a Material Component">
+    Import the module in `shared.module.ts`:
+    ```typescript
+    import { MatBadgeModule } from '@angular/material/badge';
+    
+    @NgModule({
+      exports: [
+        // ... existing exports
+        MatBadgeModule
+      ]
+    })
+    ```
+  </Step>
+
+  <Step title="Create a Modal Dialog">
+    ```bash
+    ng generate component Components/layout/Modales/example-modal
+    ```
+    
+    Open the modal from a component:
+    ```typescript
+    import { MatDialog } from '@angular/material/dialog';
+    import { ExampleModalComponent } from '../Modales/example-modal/example-modal.component';
+    
+    constructor(private dialog: MatDialog) { }
+    
+    openModal() {
+      this.dialog.open(ExampleModalComponent, {
+        width: '600px',
+        data: { /* your data */ }
+      });
+    }
+    ```
+  </Step>
+
+  <Step title="Show Notifications">
+    Use SweetAlert2 for user notifications:
+    ```typescript
+    import Swal from 'sweetalert2';
+    
+    // Success message
+    Swal.fire('Éxito', 'Operación completada', 'success');
+    
+    // Error message
+    Swal.fire('Error', 'No se pudo completar', 'error');
+    
+    // Confirmation dialog
+    Swal.fire({
+      title: '¿Está seguro?',
+      text: 'Esta acción no se puede deshacer',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Perform action
+      }
+    });
+    ```
+  </Step>
+</Steps>
+
+## Debugging
+
+### Browser DevTools
+
+The development build includes source maps for debugging:
+
+1. Open Chrome DevTools (F12)
+2. Navigate to Sources tab
+3. Find your TypeScript files under `webpack://`
+4. Set breakpoints and debug
+
+### Angular DevTools
+
+Install the Angular DevTools browser extension for:
+- Component tree inspection
+- Change detection profiling
+- Dependency injection debugging
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="CORS Errors">
+    If you encounter CORS errors when calling the API:
+    
+    1. Ensure the backend API has CORS configured
+    2. Check the API endpoint in `environment.ts`
+    3. Consider using a proxy configuration (create `proxy.conf.json`)
+  </Accordion>
+  
+  <Accordion title="Module Not Found Errors">
+    If you see module import errors:
+    
+    ```bash
+    # Clear node_modules and reinstall
+    rm -rf node_modules
+    npm install
+    ```
+  </Accordion>
+  
+  <Accordion title="Port Already in Use">
+    If port 4200 is already in use:
+    
+    ```bash
+    ng serve --port 4300
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/frontend/configuration">
+    Review configuration options and service setup
+  </Card>
+  <Card title="Deployment" icon="rocket" href="/frontend/deployment">
+    Deploy your application to production
+  </Card>
+</CardGroup>

@@ -1,0 +1,743 @@
+---
+title: 'Frontend Deployment'
+description: 'Deploy the Sistema Venta Angular application to production'
+icon: 'rocket'
+---
+
+## Overview
+
+This guide covers deploying the Sistema Venta Angular application to various production environments, including static hosting, web servers, and cloud platforms.
+
+## Pre-Deployment Checklist
+
+<Steps>
+  <Step title="Update Production Environment">
+    Configure your production API endpoint in `src/environments/environment.prod.ts`:
+
+    ```typescript src/environments/environment.prod.ts
+    export const environment = {
+      production: true,
+      endpoint: "https://your-api-domain.com/api/"
+    };
+    ```
+
+    <Note>
+      Ensure the endpoint URL ends with a trailing slash and uses HTTPS in production.
+    </Note>
+  </Step>
+
+  <Step title="Review Build Budgets">
+    Check that your bundle sizes are within limits:
+
+    ```json angular.json
+    "budgets": [
+      {
+        "type": "initial",
+        "maximumWarning": "500kb",
+        "maximumError": "1mb"
+      }
+    ]
+    ```
+
+    Run a test build to verify:
+    ```bash
+    ng build --configuration production
+    ```
+  </Step>
+
+  <Step title="Test Production Build Locally">
+    Install a static server and test the production build:
+
+    ```bash
+    npm install -g http-server
+    ng build --configuration production
+    cd dist/app-sistema-venta
+    http-server -p 8080
+    ```
+
+    Visit `http://localhost:8080` to verify everything works.
+  </Step>
+
+  <Step title="Verify API Connectivity">
+    Ensure your production API is:
+    - Accessible from the deployment environment
+    - Configured with CORS for your frontend domain
+    - Using HTTPS (required for production)
+  </Step>
+</Steps>
+
+## Production Build
+
+### Build Command
+
+Create an optimized production build:
+
+<CodeGroup>
+```bash npm
+npm run build
+```
+
+```bash Angular CLI
+ng build --configuration production
+```
+
+```bash With Base Href
+ng build --configuration production --base-href /sistema-venta/
+```
+</CodeGroup>
+
+### Build Output
+
+The production build generates optimized files in `dist/app-sistema-venta/`:
+
+```
+dist/app-sistema-venta/
+├── index.html              # Entry point
+├── main.[hash].js          # Application code
+├── polyfills.[hash].js     # Browser polyfills
+├── runtime.[hash].js       # Webpack runtime
+├── styles.[hash].css       # Compiled styles
+├── assets/                 # Static assets
+├── favicon.ico
+└── 3rdpartylicenses.txt    # Third-party licenses
+```
+
+<Note>
+  File names include content hashes for cache busting. The hash changes when file contents change.
+</Note>
+
+### Build Optimizations
+
+Production builds include:
+
+- **AOT Compilation**: Ahead-of-Time compilation for faster rendering
+- **Minification**: Compressed JavaScript and CSS
+- **Tree Shaking**: Removes unused code
+- **Dead Code Elimination**: Removes unreachable code
+- **Bundle Optimization**: Optimized chunk splitting
+- **Output Hashing**: Cache busting with content hashes
+
+## Deployment Options
+
+### Option 1: IIS (Internet Information Services)
+
+<Steps>
+  <Step title="Build the Application">
+    ```bash
+    ng build --configuration production
+    ```
+  </Step>
+
+  <Step title="Configure web.config">
+    Create a `web.config` file in `dist/app-sistema-venta/` for URL rewriting:
+
+    ```xml dist/app-sistema-venta/web.config
+    <?xml version="1.0" encoding="utf-8"?>
+    <configuration>
+      <system.webServer>
+        <rewrite>
+          <rules>
+            <rule name="Angular Routes" stopProcessing="true">
+              <match url=".*" />
+              <conditions logicalGrouping="MatchAll">
+                <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+                <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+              </conditions>
+              <action type="Rewrite" url="/" />
+            </rule>
+          </rules>
+        </rewrite>
+        <staticContent>
+          <mimeMap fileExtension=".json" mimeType="application/json" />
+          <mimeMap fileExtension=".woff" mimeType="application/font-woff" />
+          <mimeMap fileExtension=".woff2" mimeType="application/font-woff2" />
+        </staticContent>
+      </system.webServer>
+    </configuration>
+    ```
+  </Step>
+
+  <Step title="Deploy to IIS">
+    1. Open IIS Manager
+    2. Create a new website or application
+    3. Set physical path to `dist/app-sistema-venta/`
+    4. Configure application pool (use .NET CLR version: No Managed Code)
+    5. Set permissions for IIS_IUSRS
+    6. Start the website
+  </Step>
+</Steps>
+
+### Option 2: Apache Web Server
+
+<Steps>
+  <Step title="Build the Application">
+    ```bash
+    ng build --configuration production
+    ```
+  </Step>
+
+  <Step title="Create .htaccess">
+    Create a `.htaccess` file in `dist/app-sistema-venta/`:
+
+    ```apache dist/app-sistema-venta/.htaccess
+    <IfModule mod_rewrite.c>
+      RewriteEngine On
+      RewriteBase /
+      RewriteRule ^index\.html$ - [L]
+      RewriteCond %{REQUEST_FILENAME} !-f
+      RewriteCond %{REQUEST_FILENAME} !-d
+      RewriteRule . /index.html [L]
+    </IfModule>
+    ```
+  </Step>
+
+  <Step title="Deploy to Apache">
+    ```bash
+    # Copy files to web root
+    sudo cp -r dist/app-sistema-venta/* /var/www/html/
+    
+    # Set permissions
+    sudo chown -R www-data:www-data /var/www/html/
+    sudo chmod -R 755 /var/www/html/
+    
+    # Ensure mod_rewrite is enabled
+    sudo a2enmod rewrite
+    sudo systemctl restart apache2
+    ```
+  </Step>
+</Steps>
+
+### Option 3: Nginx
+
+<Steps>
+  <Step title="Build the Application">
+    ```bash
+    ng build --configuration production
+    ```
+  </Step>
+
+  <Step title="Configure Nginx">
+    Create an Nginx configuration:
+
+    ```nginx /etc/nginx/sites-available/sistema-venta
+    server {
+        listen 80;
+        server_name your-domain.com;
+        root /var/www/sistema-venta;
+        index index.html;
+
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+
+        # Cache static assets
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff|woff2)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+
+        # Gzip compression
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
+    }
+    ```
+  </Step>
+
+  <Step title="Deploy to Nginx">
+    ```bash
+    # Copy files
+    sudo mkdir -p /var/www/sistema-venta
+    sudo cp -r dist/app-sistema-venta/* /var/www/sistema-venta/
+    
+    # Enable site
+    sudo ln -s /etc/nginx/sites-available/sistema-venta /etc/nginx/sites-enabled/
+    
+    # Test and reload
+    sudo nginx -t
+    sudo systemctl reload nginx
+    ```
+  </Step>
+</Steps>
+
+### Option 4: Cloud Platforms
+
+<Tabs>
+  <Tab title="Netlify">
+    <Steps>
+      <Step title="Create netlify.toml">
+        ```toml netlify.toml
+        [build]
+          command = "npm run build"
+          publish = "dist/app-sistema-venta"
+
+        [[redirects]]
+          from = "/*"
+          to = "/index.html"
+          status = 200
+        ```
+      </Step>
+
+      <Step title="Deploy">
+        ```bash
+        # Install Netlify CLI
+        npm install -g netlify-cli
+        
+        # Build and deploy
+        ng build --configuration production
+        netlify deploy --prod --dir=dist/app-sistema-venta
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Vercel">
+    <Steps>
+      <Step title="Create vercel.json">
+        ```json vercel.json
+        {
+          "version": 2,
+          "builds": [
+            {
+              "src": "package.json",
+              "use": "@vercel/static-build",
+              "config": {
+                "distDir": "dist/app-sistema-venta"
+              }
+            }
+          ],
+          "routes": [
+            {
+              "src": "/(.*)",
+              "dest": "/index.html"
+            }
+          ]
+        }
+        ```
+      </Step>
+
+      <Step title="Add Build Script">
+        Update `package.json`:
+        ```json package.json
+        {
+          "scripts": {
+            "vercel-build": "ng build --configuration production"
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Deploy">
+        ```bash
+        # Install Vercel CLI
+        npm install -g vercel
+        
+        # Deploy
+        vercel --prod
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="AWS S3 + CloudFront">
+    <Steps>
+      <Step title="Build Application">
+        ```bash
+        ng build --configuration production
+        ```
+      </Step>
+
+      <Step title="Create S3 Bucket">
+        ```bash
+        aws s3 mb s3://sistema-venta-frontend
+        aws s3 website s3://sistema-venta-frontend \
+          --index-document index.html \
+          --error-document index.html
+        ```
+      </Step>
+
+      <Step title="Upload Files">
+        ```bash
+        aws s3 sync dist/app-sistema-venta/ s3://sistema-venta-frontend \
+          --delete \
+          --cache-control "public, max-age=31536000, immutable" \
+          --exclude "index.html"
+        
+        # Upload index.html separately with no-cache
+        aws s3 cp dist/app-sistema-venta/index.html s3://sistema-venta-frontend/ \
+          --cache-control "no-cache, no-store, must-revalidate"
+        ```
+      </Step>
+
+      <Step title="Configure CloudFront">
+        Create a CloudFront distribution pointing to your S3 bucket with:
+        - Custom error response: 404 → /index.html (200)
+        - HTTPS certificate
+        - Compression enabled
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="Azure Static Web Apps">
+    <Steps>
+      <Step title="Create Configuration">
+        ```json staticwebapp.config.json
+        {
+          "navigationFallback": {
+            "rewrite": "/index.html",
+            "exclude": ["/assets/*", "/*.{css,scss,js,png,gif,ico,jpg,svg}"]
+          },
+          "responseOverrides": {
+            "404": {
+              "rewrite": "/index.html",
+              "statusCode": 200
+            }
+          }
+        }
+        ```
+      </Step>
+
+      <Step title="Deploy via CLI">
+        ```bash
+        # Install Azure Static Web Apps CLI
+        npm install -g @azure/static-web-apps-cli
+        
+        # Build
+        ng build --configuration production
+        
+        # Deploy
+        swa deploy dist/app-sistema-venta --deployment-token <token>
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Docker Deployment
+
+### Create Dockerfile
+
+<CodeGroup>
+```dockerfile Dockerfile (Multi-stage)
+# Stage 1: Build
+FROM node:14-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+RUN npm run build -- --configuration production
+
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+
+COPY --from=build /app/dist/app-sistema-venta /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+```nginx nginx.conf
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+}
+```
+</CodeGroup>
+
+### Build and Run Docker Container
+
+```bash
+# Build image
+docker build -t sistema-venta-frontend .
+
+# Run container
+docker run -d -p 80:80 --name sistema-venta sistema-venta-frontend
+
+# View logs
+docker logs sistema-venta
+```
+
+### Docker Compose
+
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+```
+
+## SSL/HTTPS Configuration
+
+<Note>
+  Always use HTTPS in production for security. The Material Design API and modern browsers require HTTPS for many features.
+</Note>
+
+### Using Let's Encrypt with Certbot
+
+<Steps>
+  <Step title="Install Certbot">
+    ```bash
+    sudo apt-get update
+    sudo apt-get install certbot python3-certbot-nginx
+    ```
+  </Step>
+
+  <Step title="Obtain Certificate">
+    ```bash
+    sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+    ```
+  </Step>
+
+  <Step title="Auto-renewal">
+    Certbot automatically adds a renewal cron job. Test it:
+    ```bash
+    sudo certbot renew --dry-run
+    ```
+  </Step>
+</Steps>
+
+## Performance Optimization
+
+### Enable Compression
+
+Ensure your web server serves compressed files:
+
+<Tabs>
+  <Tab title="Nginx">
+    ```nginx
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+      text/plain
+      text/css
+      text/xml
+      text/javascript
+      application/json
+      application/javascript
+      application/xml+rss
+      application/atom+xml
+      image/svg+xml;
+    ```
+  </Tab>
+
+  <Tab title="Apache">
+    ```apache
+    <IfModule mod_deflate.c>
+      AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+      AddOutputFilterByType DEFLATE application/javascript application/json
+      AddOutputFilterByType DEFLATE application/xml application/xml+rss
+    </IfModule>
+    ```
+  </Tab>
+</Tabs>
+
+### Cache Headers
+
+Set appropriate cache headers:
+
+```nginx
+# Immutable files (with hashes)
+location ~* \.[0-9a-f]{20}\.(js|css)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
+
+# index.html - never cache
+location = /index.html {
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+}
+
+# Other static assets
+location ~* \.(jpg|jpeg|png|gif|ico|svg|woff|woff2)$ {
+    expires 6M;
+    add_header Cache-Control "public";
+}
+```
+
+## Monitoring and Troubleshooting
+
+### Health Check Endpoint
+
+The `index.html` serves as a basic health check:
+
+```bash
+curl -I https://your-domain.com/
+# Should return: HTTP/1.1 200 OK
+```
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="404 on Page Refresh">
+    **Problem**: Direct navigation to routes returns 404.
+    
+    **Solution**: Configure server URL rewriting to always serve `index.html` for non-file requests. See deployment-specific configurations above.
+  </Accordion>
+
+  <Accordion title="API CORS Errors">
+    **Problem**: API calls fail with CORS errors in production.
+    
+    **Solution**: Configure your backend API to allow requests from your frontend domain:
+    
+    ```csharp Program.cs (Backend)
+    builder.Services.AddCors(options => {
+        options.AddPolicy("AllowFrontend", policy => {
+            policy.WithOrigins("https://your-domain.com")
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Environment Variables Not Working">
+    **Problem**: Production environment settings not applied.
+    
+    **Solution**: Ensure you're building with `--configuration production` and verify file replacement in `angular.json`.
+  </Accordion>
+
+  <Accordion title="Large Bundle Sizes">
+    **Problem**: Build exceeds bundle size budgets.
+    
+    **Solutions**:
+    - Enable lazy loading for feature modules
+    - Analyze bundle with: `ng build --configuration production --stats-json`
+    - Use `webpack-bundle-analyzer`: `npx webpack-bundle-analyzer dist/app-sistema-venta/stats.json`
+    - Remove unused dependencies
+  </Accordion>
+</AccordionGroup>
+
+### Logging and Analytics
+
+Consider adding:
+
+- **Application Insights** (Azure) or **CloudWatch** (AWS) for monitoring
+- **Sentry** or similar for error tracking
+- **Google Analytics** for user analytics
+
+```typescript app.component.ts
+// Example: Add error tracking
+import * as Sentry from '@sentry/angular';
+
+Sentry.init({
+  dsn: 'your-sentry-dsn',
+  environment: environment.production ? 'production' : 'development'
+});
+```
+
+## Continuous Deployment
+
+### GitHub Actions Example
+
+```yaml .github/workflows/deploy.yml
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      working-directory: ./AppSistemaVenta
+    
+    - name: Build
+      run: npm run build
+      working-directory: ./AppSistemaVenta
+    
+    - name: Deploy to S3
+      uses: jakejarvis/s3-sync-action@master
+      with:
+        args: --delete
+      env:
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        SOURCE_DIR: './AppSistemaVenta/dist/app-sistema-venta'
+```
+
+## Post-Deployment Verification
+
+<Steps>
+  <Step title="Verify Application Loads">
+    - Navigate to your production URL
+    - Check that the login page displays correctly
+    - Verify all assets load (check browser console)
+  </Step>
+
+  <Step title="Test Core Functionality">
+    - Login with test credentials
+    - Navigate to each main page
+    - Test API connectivity
+    - Verify data displays correctly
+  </Step>
+
+  <Step title="Check Performance">
+    - Run Lighthouse audit in Chrome DevTools
+    - Verify load times are acceptable
+    - Check bundle sizes in Network tab
+  </Step>
+
+  <Step title="Monitor Logs">
+    - Check server access logs
+    - Monitor application errors
+    - Verify API calls are successful
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/frontend/configuration">
+    Review configuration options and customize settings
+  </Card>
+  <Card title="Development" icon="code" href="/frontend/development">
+    Return to development guide for updates and enhancements
+  </Card>
+</CardGroup>

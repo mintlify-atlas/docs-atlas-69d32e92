@@ -1,0 +1,129 @@
+---
+title: 'Delete Product'
+api: 'DELETE /api/Producto/Eliminar/{id}'
+description: 'Delete a product from the system'
+---
+
+## Endpoint
+
+```
+DELETE /api/Producto/Eliminar/{id}
+```
+
+Deletes a product from the system using its unique identifier.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  The unique identifier of the product to delete
+</ParamField>
+
+## Response
+
+The response is wrapped in a `Response<T>` object containing a boolean success indicator.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates whether the request was processed successfully
+</ResponseField>
+
+<ResponseField name="value" type="boolean" required>
+  Indicates whether the product was actually deleted
+  - `true` - Product was found and deleted
+  - `false` - Product was not found or deletion failed
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message (only populated when status is false)
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE "http://localhost:5000/api/Producto/Eliminar/15" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+fetch('http://localhost:5000/api/Producto/Eliminar/15', {
+  method: 'DELETE',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+```csharp C#
+using var client = new HttpClient();
+int productId = 15;
+var response = await client.DeleteAsync($"http://localhost:5000/api/Producto/Eliminar/{productId}");
+var content = await response.Content.ReadAsStringAsync();
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json 200 - Success
+{
+  "status": true,
+  "value": true,
+  "msg": null
+}
+```
+
+```json 200 - Product Not Found
+{
+  "status": true,
+  "value": false,
+  "msg": null
+}
+```
+
+```json 200 - Error
+{
+  "status": false,
+  "value": false,
+  "msg": "Cannot delete product: referenced in existing sales"
+}
+```
+</CodeGroup>
+
+## Response Status
+
+This endpoint always returns HTTP 200. Check both the `status` and `value` fields:
+
+- `status: true, value: true` - Product deleted successfully
+- `status: true, value: false` - Product not found (no deletion performed)
+- `status: false` - An error occurred (check `msg` field for details)
+
+## Important Notes
+
+### Cascading Effects
+
+Deleting a product may fail if:
+- The product is referenced in existing sales transactions
+- The product has related records in other tables
+
+In these cases, consider deactivating the product instead of deleting it by using the [Update Product](/api/products/update) endpoint with `esActivo: 0`.
+
+### Alternative: Soft Delete
+
+For better data integrity and audit trails, it's recommended to use soft delete by setting the product's `esActivo` field to 0 instead of permanently deleting it:
+
+```bash
+curl -X PUT "http://localhost:5000/api/Producto/Editar" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "idProducto": 15,
+    "esActivo": 0,
+    ...
+  }'
+```
+
+## Path Parameter Validation
+
+- The `id` parameter must be a positive integer
+- Non-integer values will result in a 400 Bad Request

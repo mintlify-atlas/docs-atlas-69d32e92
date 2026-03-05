@@ -1,0 +1,107 @@
+---
+title: 'Delete User'
+api: 'DELETE /api/Usuario/Eliminar/{id}'
+description: 'Delete a user from the system'
+---
+
+## Endpoint
+
+```
+DELETE /api/Usuario/Eliminar/{id}
+```
+
+Deletes a user from the Sistema Venta application by their unique identifier.
+
+## Path Parameters
+
+<ParamField path="id" type="integer" required>
+  Unique identifier of the user to delete
+</ParamField>
+
+## Response
+
+The endpoint returns a `Response<bool>` wrapper indicating whether the deletion was successful.
+
+<ResponseField name="status" type="boolean" required>
+  Indicates if the user was successfully deleted
+</ResponseField>
+
+<ResponseField name="value" type="boolean">
+  True if the user was deleted, false otherwise
+</ResponseField>
+
+<ResponseField name="msg" type="string">
+  Error message if status is false
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE "https://api.example.com/api/Usuario/Eliminar/3" \
+  -H "Content-Type: application/json"
+```
+
+```javascript JavaScript
+const userId = 3;
+const response = await fetch(`https://api.example.com/api/Usuario/Eliminar/${userId}`, {
+  method: 'DELETE',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const data = await response.json();
+```
+
+```csharp C#
+var client = new HttpClient();
+int userId = 3;
+var response = await client.DeleteAsync($"https://api.example.com/api/Usuario/Eliminar/{userId}");
+var content = await response.Content.ReadAsStringAsync();
+```
+</CodeGroup>
+
+## Example Response
+
+<CodeGroup>
+```json Success
+{
+  "status": true,
+  "value": true,
+  "msg": null
+}
+```
+
+```json Error - User Not Found
+{
+  "status": false,
+  "value": false,
+  "msg": "User with ID 3 not found"
+}
+```
+
+```json Error - Foreign Key Constraint
+{
+  "status": false,
+  "value": false,
+  "msg": "Cannot delete user: user has associated records in the system"
+}
+```
+</CodeGroup>
+
+## Implementation Details
+
+- **Controller**: `UsuarioController.cs:113`
+- **Service Method**: `IUsuarioService.Eliminar(int)`
+- **Route Constraint**: `{id:int}` - ID must be an integer
+- **Response Type**: `Response<bool>`
+- **HTTP Status**: Always returns 200 OK (check `status` field for actual result)
+
+## Notes
+
+- The user ID must be a valid integer
+- Deletion may fail if the user has associated records (sales, transactions, etc.) due to foreign key constraints
+- If the user doesn't exist, the operation will return `status: false` with an appropriate error message
+- This operation is permanent and cannot be undone
+- Consider implementing a soft delete (setting `esActivo` to 0) instead of hard delete for data integrity
