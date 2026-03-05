@@ -90,10 +90,7 @@
           {
             "group": "Categories",
             "pages": [
-              "api/categories/list",
-              "api/categories/create",
-              "api/categories/update",
-              "api/categories/delete"
+              "api/categories/list"
             ]
           },
           {
